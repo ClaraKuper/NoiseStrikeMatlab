@@ -26,53 +26,50 @@ design.fixDurJ   = 0.5; % Additional jitter to fixation
 design.iti       = 0.2; % Inter stimulus interval
 
 % conditions
-design.nGoalPos   = 10
-design.nySpeed    = 8  % 8 different possible trajectories
+design.nGoalPos   = 2;
+design.nyDist     = 8;  % 8 different possible trajectories
 
 % position and size variables, in dva     
 % Fixation
 design.fixWidth = 1;
 design.fixHeight = 1;
-design.fixCol = [1,1,1];
-design.fixPos = (20,0);
+design.fixRad = 0.2;
+design.fixPos = [20,0];
 
 % Attacker
-design.attackerRad = 0.5;
-design.attackerCol = 'black';
+design.attackerRad = 1;
 design.attackerxPos= -20;
 design.attackeryPos= 0;
-design.travelDur   = 0.5; # time in sec
-design.ySpeed      = linspace(1,design.nySpeed,design.nySpeed);
-design.xSpeed      = 0;  #initialize only, change later
-design.attackerVisible =  1;
+design.travelDur   = 0.5; % time in sec
+design.yDist       = linspace(1,design.nyDist,design.nyDist);
+design.xSpeed      = 0;  % initialize only, change later
+design.attackerVisible =  0.8;
 
 
 % Goal
-design.goalHeight = 3;
-design.goalCol    = [0, 0.2, 0.8];
-design.goalxPos   = 10;
+design.goalHeight = 4;
+design.goalxPos   = 0;
 design.goalyPos   = linspace(-4, 4, design.nGoalPos);
 
 % Target
 
-design.targetrad        = 0.5;
-design.targetcol        = [1, 1, 1];
+design.targetRad        = 1;
 design.targetxPos       = 0;
-design.targetyPos_range = [design.goalHeight*0.9, design.goalHeight*0.9];
-design.targetDur        = 3; # target duration in frames
+design.targetyPos_range = [design.goalHeight*0.9, -design.goalHeight*0.9];
+design.targetDur        = 5; % target duration in frames
 
 design.rangeAccept = 2;
 design.rangeCalib  = 1;
 
 % speed variables, in dva/s
-design.xSpeed = (abs(design.attackerxPos)+abs(design.targetxPos))/design.travelDur;  % dva/s how much does the ball move in one second?
-design.travelFrames = design.travelDur * scr.refRate
+design.travelxDist = abs(design.attackerxPos)+abs(design.targetxPos);
+design.travelFrames = design.travelxDist * scr.refRate;
 
 % overall information %
 % number of blocks and trials in the first round
 if settings.TEST == 0
     design.nBlocks = 1;
-    design.nTrials = 10;
+    design.nTrials = 1;
 else
     design.nBlocks = 5;
     design.nTrials = settings.TRIALS;
@@ -89,7 +86,7 @@ if settings.TEST
     design.jumpTim   = design.alResT;               % random time after which target jumps, maximum is the allowed response time 
     if settings.BLOCK
         blockBy    = design.alResT/design.nBlocks;
-        jumpBlocks = [0:blockBy:design.alResT];
+        %jumpBlocks = 0:blockBy:design.alResT;
     end
 else
     design.jumpTim   = 0.1;
@@ -103,18 +100,20 @@ for b = 1:design.nBlocks
     t = 0;
     for triali = 1:design.nTrials
         for goal = design.goalyPos
-          for ySpeed = design.ySpeed
-            t = t+1;
-            % define goal position
-            trial(t).goalPos = goal;
-            % define ySpeed
-            trial(t).ySpeed = drawlaunchspeed(goal, ySpeed, design.goalHeight, design.travelFrames);
-            % define target positions
-            trial(t).posSet = posSet;
-            % define fixation duration
-            trial(t).fixT    = design.fixDur + rand(1)*design.fixDurJ;
+            for yDist = design.yDist
+                t = t+1;
+                % define goal position
+                trial(t).goalPos = goal;
+                % define yDist
+                trial(t).yDist = drawlaunchspeed(goal, yDist, design.goalHeight, design.travelFrames);
+                % define target positions
+                trial(t).posSet = drawposset(goal,design.targetyPos_range,60);
+                % define fixation duration
+                trial(t).fixT    = design.fixDur + rand(1)*design.fixDurJ;
+                % define the trajectory
+                trial(t).trajectory = yDist;
+            end
         end
-      end
     end
     % randomize
     r = randperm(t);

@@ -104,7 +104,7 @@ try
     
     %% Run trials
     % Display Instructions:
-    DrawFormattedText(visual.window, 'Touch the bar to start. Try to block the target.', 'center', 200, visual.textColor);
+    DrawFormattedText(visual.window, 'Block the goal when the attacker hits', 'center', 200, visual.textColor);
     Screen('Flip',visual.window);
     WaitSecs(2);
     
