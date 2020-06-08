@@ -1,0 +1,36 @@
+---
+title: "screen_jumps"
+author: "Clara Kuper"
+date: "13/02/2020"
+output: html_document
+---
+
+```{r setup}
+
+knitr::opts_knit$set(root.dir = "~/Projects/2019_Compelled_Movements/CompelledMovements/CMP_Hand/Data")
+
+```
+
+## Notebook to detect and counteract jumps in the movement data
+
+```{r}
+# library
+library(ggplot2)
+
+# data
+reaches <- read.table('logData.txt')
+data    <- read.table('offData.txt')
+
+names_r <- c('session','block','trial','timetag','x','y','participant')
+names_d <- c('participant', 'session','block', 'trial', 'effector','goalPos', 'jumpTim',  'jumpPos',  'fixT','alReaT',  'resPos',  't_draw',  't_touched',  't_go',  't_movStart',  't_jump',  't_movEnd',  't_goal', 't_end', 'reaT', 'gapT','processT', 'correct')
+colnames(reaches) <- names_r
+colnames(data) <- names_d
+
+reaches$participant <- as.factor(reaches$participant)
+
+levels(reaches$participant) <- c('TR','av','ck','lk')
+
+reaches$ID = paste(reaches$participant, reaches$session,reaches$block,reaches$trial, sep = "")
+data$ID    = paste(data$participant, data$session,data$block,data$trial, sep = "")
+
+```
