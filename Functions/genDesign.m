@@ -3,7 +3,7 @@ function genDesign(vpcode)
 % 2017 by Martin Rolfs
 % 2019 mod by Clara Kuper
 
-global design settings scr
+global design scr
 
 % randomize random
 rand('state',sum(100*clock));
@@ -26,7 +26,7 @@ design.fixDurJ   = 0.5; % Additional jitter to fixation
 design.iti       = 0.2; % Inter stimulus interval
 
 % conditions
-design.nGoalPos   = 2;
+design.nGoalPos   = 5;
 design.nyDist     = 8;  % 8 different possible trajectories
 
 % position and size variables, in dva     
@@ -34,22 +34,23 @@ design.nyDist     = 8;  % 8 different possible trajectories
 design.fixWidth = 1;
 design.fixHeight = 1;
 design.fixRad = 0.2;
-design.fixPos = [20,0];
+design.fixPos = [25,0];
 
 % Attacker
 design.attackerRad = 1;
-design.attackerxPos= -20;
+design.attackerxPos= -25;
 design.attackeryPos= 0;
-design.travelDur   = 0.5; % time in sec
+design.travelDur   = 0.7; % time in sec
 design.yDist       = linspace(1,design.nyDist,design.nyDist);
 design.xSpeed      = 0;  % initialize only, change later
-design.attackerVisible =  0.8;
+design.attackerVisible =  0.6;
 
 
 % Goal
 design.goalHeight = 4;
 design.goalxPos   = 0;
-design.goalyPos   = linspace(-4, 4, design.nGoalPos);
+design.goalShift  = 5;
+design.goalyPos   = linspace(-design.goalShift, design.goalShift, design.nGoalPos);
 
 % Target
 
@@ -67,33 +68,8 @@ design.travelFrames = design.travelxDist * scr.refRate;
 
 % overall information %
 % number of blocks and trials in the first round
-if settings.TEST == 0
-    design.nBlocks = 1;
-    design.nTrials = 1;
-else
-    design.nBlocks = 5;
-    design.nTrials = settings.TRIALS;
-end
-
-if settings.TEST
-    if settings.CODE
-        load(sprintf('./Data/%s_timParams.mat',settings.testCode)); % load a matfile with subject name and code
-    else
-        load(sprintf('./Data/%s_timParams.mat',design.vpcode)); % load a matfile with subject name and code
-    end
-    design.alResT    = tim.rea + 2*tim.rea_sd;      % Allowed response time
-    design.alMovT    = tim.mov + 2*tim.mov_sd;      % Allowed movement time
-    design.jumpTim   = design.alResT;               % random time after which target jumps, maximum is the allowed response time 
-    if settings.BLOCK
-        blockBy    = design.alResT/design.nBlocks;
-        %jumpBlocks = 0:blockBy:design.alResT;
-    end
-else
-    design.jumpTim   = 0.1;
-    design.alResT    = 1.0;      % Allowed response time
-    design.alMovT    = 1.0;      % Allowed movement time
-end
-    
+design.nBlocks = 5;
+design.nTrials = 5; 
 
 % build
 for b = 1:design.nBlocks
@@ -105,7 +81,7 @@ for b = 1:design.nBlocks
                 % define goal position
                 trial(t).goalPos = goal;
                 % define yDist
-                trial(t).yDist = drawlaunchspeed(goal, yDist, design.goalHeight, design.travelFrames);
+                trial(t).yDist = getytar(goal, yDist, design.goalHeight);
                 % define target positions
                 trial(t).posSet = drawposset(goal,design.targetyPos_range,60);
                 % define fixation duration

@@ -1,4 +1,4 @@
-function ySpeed=drawlaunchspeed(ypos, tra, height, frames)
+function yTar=getytar(ypos, tra, height)
     %%%tra in range from 1 - 8 is one of 8 possible trajectories:
     %1: far, up, out: 1 dva above upper border
     %2: close, up, out: 0.5 dva above upper border
@@ -13,22 +13,21 @@ function ySpeed=drawlaunchspeed(ypos, tra, height, frames)
     upper = ypos + height;
     lower = ypos - height;
     if tra == 1
-        pos = upper + 2;
+        yTar = upper + 2;
     elseif tra == 2
-        pos = upper + 1;
+        yTar = upper + 1;
     elseif tra == 3
-        pos = upper - 1;
+        yTar = upper - 1;
     elseif tra == 4
-        pos = upper - 2;
+        yTar = upper - 2;
     elseif tra == 5
-        pos = lower + 2;
+        yTar = lower + 2;
     elseif tra == 6
-        pos = lower + 1;
+        yTar = lower + 1;
     elseif tra == 7
-        pos = lower - 1;
+        yTar = lower - 1;
     elseif tra == 8
-        pos = lower - 2;
+        yTar = lower - 2;
     end
         
 
-    ySpeed = pos/frames;

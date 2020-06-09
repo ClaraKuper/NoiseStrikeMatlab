@@ -39,17 +39,10 @@ tic;
 % define some settings for the experiment
 global settings visual design
 
-settings.TEST   = input('is this a setup(0) or the actual testing (1)?\n'); % 0 = setup session, 1 = actual testing
 settings.MODE   = 1; % 1 = Hands, 2 = Eyes, 3 = both
 settings.DEBUG  = 0; % 1 = debug mode, 0 = normal mode
-settings.CODE   = 0; % if you want to use old calibration data, this can be changed when the experiment start. Don't change here.
-if settings.TEST
-    settings.TRIALS = round(input('How many trials per block do do feel like? Enter an even number.\n There will be 5 blocks. \n')/2);
-    settings.BLOCK  = input('Do you want the difficulty to be blocked? Yes(1) or No(0)? \n');
-else
-    settings.BLOCK  = 0;
-end
-
+settings.TEST   = 1; % 0 = skip sync tests, 1 = run sync0 tests
+ 
 %% start the experiment loop, errors in this loop will be caught
 try
     newFile = 0;
@@ -59,19 +52,12 @@ try
             subPath = strcat('./Data/',subCode);
 
             % create data file
-            datFile    = sprintf('%s.dat',subPath);
-            datLogFile = sprintf('%sLog.dat',subPath);
-            if settings.TEST && exist(datFile,'file')
+            datFile    = sprintf('%s.mat',subPath);
+            datLogFile = sprintf('%sLog.mat',subPath);
+            if exist(datFile,'file')
                 o = input('>>>> This file exists already. Should I overwrite it [y / n]? \n','s');
                 if strcmp(o,'y')
                     newFile = 1;
-                else
-                    reuse = input('Do you want to use old calibration files? [y/n]? \n', 's');
-                    if strcmp(reuse,'y')
-                        settings.testCode = subCode;
-                        settings.CODE = 1;
-                        fprintf('Ok, will use the old file for calibration. Please enter a new code to save the data \n');
-                    end
                 end
             else
                 newFile = 1;
@@ -121,19 +107,13 @@ end
 % all features related to PTB. Note: we leave the variables in the
 % workspace so you can have a look at them if you want.
 % For help see: help sca
-if settings.TEST == 1
-    save(datFile,'data');
-    save(datLogFile,'dataLog');
-    save(sprintf('./Design/%s_design.mat',design.vpcode),'design'); %
-else
-    tim.rea       = nanmean([data.block(1).trial.rea_time]);
-    tim.rea_sd    = nanstd([data.block(1).trial.rea_time]);
-    tim.mov       = nanmean([data.block(1).trial.mov_time]);
-    tim.mov_sd    = nanstd([data.block(1).trial.mov_time]);
-    save(sprintf('./Data/%s_timParams',design.vpcode),'tim');
-    save(sprintf('./Data/%s_setUpData',design.vpcode),'data');
-    
-end
+
+data_table = [data2output(data) position2table(design)];
+writetable(data_table, sprintf('./Data/%s_table.csv',design.vpcode));
+
+save(datFile,'data');
+save(datLogFile,'dataLog');
+save(sprintf('./Design/%s_design.mat',design.vpcode),'design'); %
 
 Datapixx('DisableTouchpixx');
 sca;

@@ -16,7 +16,7 @@ function [blockData,dataLog] = runBlock(b)
         [blockData.trial(t),dataLog.trial(t)] = runSingleTrial(trial, design, visual);
        
         
-        if blockData.trial(t).success
+        if ~ blockData.trial(t).success
             
             trials_total                    = trials_total + 1;
             design.b(b).trial(trials_total) = trial;

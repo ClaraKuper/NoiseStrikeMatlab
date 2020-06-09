@@ -34,20 +34,23 @@ function [trialData,dataLog]  = runSingleTrial(trial, design, visual)
 
     % events and responses
     if 2 < trial.trajectory && trial.trajectory < 7
-        hitgoal = true;
+        hitgoal = 1;
     else
-        hitgoal = false;
+        hitgoal = 0;
     end
     
     % Initialize timing and monitoring parameters
     on_fix         = false;
-    goresp         = false;
+    goresp         = 0;
+    
+    tar_pos_movStart = 0;
+    tar_pos_movEnd   = 0;
 
     % timing
     t_draw     = NaN;  % the stimulus was on screen
     t_touched  = NaN;  % the fixation was touched
     t_go       = NaN;  % the attacker started moving
-    t_disp     = NaN;  % the attacker disappeared
+    t_disap     = NaN;  % the attacker disappeared
     t_movStart = NaN;  % the movement started
     t_cross    = NaN;  % the attacker crossed the x position of the goal
     t_movEnd   = NaN;  % the movements ended
@@ -56,7 +59,7 @@ function [trialData,dataLog]  = runSingleTrial(trial, design, visual)
     % screen flips
     flip_count = 0;
     % per default, the trial is a success :)
-    trial_succ = 0;
+    trial_succ = 1;
     
     % dataLog - write all the available logging data here
     Datapixx('RegWrRd');
@@ -129,9 +132,9 @@ function [trialData,dataLog]  = runSingleTrial(trial, design, visual)
         
         if Datapixx('GetTime')-t_go < attackerVisible % this is when we draw the attacker
             Screen('DrawDots', visual.window, attackerPos, attackerSize, attackerColor, [], 2); % attacker
-        elseif isnan(tdisp)
-            t_disp = Datapixx('GetTime');
-            dataLog.message = [dataLog.message, sprintf('The attacker disappeared at %f \n', t_disp)];
+        elseif isnan(t_disap)
+            t_disap = Datapixx('GetTime');
+            dataLog.message = [dataLog.message, sprintf('The attacker disappeared at %f \n', t_disap)];
         end
         
         %Draw everything on the screen and show
@@ -164,7 +167,7 @@ function [trialData,dataLog]  = runSingleTrial(trial, design, visual)
                 t_movStart      = timetag(status.newLogFrames);
                 t_movStartPixx  = Datapixx('GetTime');
                 dataLog.message = [dataLog.message, sprintf('The hand moved at %f\n', t_movStartPixx)];
-                
+                tar_pos_movStart = posId;
             % check if movement reached the target box
             elseif ~ goresp && ...
                     goalPos(1) - visual.rangeAccept < touch_X && touch_X < goalPos(1) + visual.rangeAccept &&...
@@ -172,7 +175,8 @@ function [trialData,dataLog]  = runSingleTrial(trial, design, visual)
                t_movEnd        = timetag(status.newLogFrames);                    % we want a time tag when the target was touched for the first time
                t_movEndPixx    = Datapixx('GetTime');
                dataLog.message = [dataLog.message, sprintf('The hand reached the target at %f\n',t_movEndPixx)];
-               goresp          = true;
+               goresp          = 1;
+               tar_pos_movEnd = posId;
             end
         end
         if attackerPos(1) >= goalPos(1)
@@ -182,7 +186,7 @@ function [trialData,dataLog]  = runSingleTrial(trial, design, visual)
             if isnan(t_movEnd)
                 % set a time for the movement end
                 t_movEnd = t_cross;
-                goresp  = false;
+                goresp  = 0;
             end
         end
     end
@@ -197,41 +201,44 @@ function [trialData,dataLog]  = runSingleTrial(trial, design, visual)
     
     % present feedback
 
-    if rea_time > design.alResT
-        DrawFormattedText(visual.window, 'Reaction to slow!', 'center', 'center', visual.textColor);
-        trial_succ = 1;
-    elseif mov_time > design.alMovT
-        trial_succ = 2;
-        DrawFormattedText(visual.window, 'Move faster!', 'center', 'center', visual.textColor);
-    elseif goresp && hitgoal 
+    if goresp && hitgoal 
         DrawFormattedText(visual.window, 'Well done!', 'center', 'center', visual.textColor);
     elseif goresp && ~hitgoal 
-        DrawFormattedText(visual.window, 'false Alarm', 'center', 'center', visual.textColor);
+        DrawFormattedText(visual.window, 'False Alarm', 'center', 'center', visual.textColor);
     elseif ~goresp && hitgoal 
         DrawFormattedText(visual.window, 'Missed!', 'center', 'center', visual.textColor);
     elseif ~goresp && ~hitgoal 
         DrawFormattedText(visual.window, 'Correct!', 'center', 'center', visual.textColor);
     else
         DrawFormattedText(visual.window, 'Unknown Error', 'center', 'center', visual.textColor);
-        trial_succ = 3;
+        trial_succ = 0;
     end
 
     Screen('Flip', visual.window);
     
-    trialData.success         = trial_succ;                                 % 0 = success 
-                                                                            % 1 = too slow reaction 
-                                                                            % 2 = too slow move                                                                       % 3 = unknown error
+    trialData.success         = trial_succ;                                 % 1 = success 
+                                                                            % 0 = unknown error
     trialData.rea_time        = rea_time;
     trialData.mov_time        = mov_time;
     trialData.initPixx        = t_initPixx;
     trialData.t_draw          = t_draw;
     trialData.t_touched       = t_touched;
     trialData.t_go            = t_go;
-    trialData.t_disp          = t_disp;
+    trialData.t_disap         = t_disap;
     trialData.t_movStart      = t_movStart;
     trialData.t_movEnd        = t_movEnd;
     trialData.t_cross         = t_cross;
     trialData.t_end           = t_end;
+    
+    trialData.goResp          = goresp;
+    trialData.hitGoal         = hitgoal;
+    
+    trialData.yDist           = abs(travelyDist) - abs(goalypost);
+    trialData.goalY           = goalypost;
+    trialData.trajectory      = trial.trajectory;
+    trialData.posSet          = trial.posSet;
+    trialData.posMovStart     = tar_pos_movStart;
+    trialData.posMovEnd       = tar_pos_movEnd;
     
     
     WaitSecs(design.iti);

@@ -11,7 +11,7 @@ function setScreens
       Screen('Preference', 'SkipSyncTests', 1);
   end
 
-    % Define some parameters for the screen in cabin 8
+  % Define some parameters for the screen in cabin 8
 
   scr.subDist = 430;          % subject distance (mm)
   scr.refRate = 120;          % refresh rate (Hz)    
@@ -63,6 +63,7 @@ function setScreens
   
   ref = Screen('GetFlipInterval', visual.window);
   scr.hz = 1/ref;
+  visual.hz = scr.hz;
   
   visual.ppd = va2pix(1,scr);
 
