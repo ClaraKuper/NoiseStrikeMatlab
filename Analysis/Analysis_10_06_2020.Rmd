@@ -1,0 +1,226 @@
+---
+title: "Analysis NoiseStrike 2020"
+author: 'Clara Kuper'
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(ggplot2)
+```
+
+Step 1: Load the data from all participants
+
+```{r}
+setwd('..')
+basewd <- getwd()
+datPath <- paste(basewd, '/Data/', sep = "")
+
+datFiles <- list.files(datPath, pattern = ".csv")
+d <- NULL
+
+
+for (file in datFiles){
+  
+  subject_name <- substr(file,1,2)
+  session_nr   <- substr(file,3,4)
+  filedir      <- paste(datPath,file, sep = "")
+  data         <- read.csv(filedir)
+  data$participant <- subject_name 
+  data$session     <- session_nr
+  
+  
+  
+  if (! is.null(d)) {
+    names(data) <- names(d)
+  }
+  
+  d <- rbind(d,data)
+  
+}
+
+```
+
+Step 2: Find hit/false alarm/correct rejection/miss responses
+
+```{r}
+
+d$resp_correct <- 0
+d$resp_correct[which(d$goResp==d$hitGoal)] <- 1
+
+for (participant in unique(d$participant)){
+  p_correct <- (sum(d$resp_correct[which(d$participant == participant)])/length(d$resp_correct[which(d$participant == participant)])) *100
+  
+  print(paste('Participant', participant, 'gave correct answers in', p_correct, 'percent of the trials'))
+  
+}
+
+```
+
+
+Step 3: Compute the reaction time per response
+
+
+```{r}
+# Clean the reaction times
+
+clean_idx = which(is.nan(d$rea_time)|d$rea_time < 0)
+cleaned_d = d[-clean_idx,]
+
+for (participant in unique(d$participant)){
+  for (resp in unique(d$goResp)){
+    for (goal in unique(d$hitGoal)){
+      
+     cond_data <- cleaned_d[which(cleaned_d$hitGoal == goal & cleaned_d$goResp == resp & cleaned_d$participant == participant),]
+     
+     print(paste('Participant', participant, 'reacted within', mean(cond_data$rea_time), 'in trials with goal', goal, 'and response', resp))
+      
+    }
+  }
+}  
+```
+
+Step 4: Collaps upper/lower bound responses (later)
+
+```{r}
+# Normalize the targets
+ppd = 20 #still to change
+norm_d <- cleaned_d
+
+# 0. Normalize the mean of the goal to pixel:
+norm_d$goalY <- norm_d$goalY/ppd
+
+# 1. Normalize to the mean of the goal:
+
+
+
+```
+
+
+Step 5: Write a function that computes % correct answers of an interval 
+```{r}
+
+integrate_over <- function(x_values, y_values, step_n) {
+   
+   start <- min(y_values)
+   stop <- max(y_values)
+   step_size <- (stop-start)/step_n
+   sequence <- seq(start, stop, step_size)
+   
+   out_mat <- matrix(ncol = 2, nrow = length(sequence)-1)
+   
+   
+   for (step in sequence){
+     if (step == start){
+       last <- step
+       idx <- 1
+     }
+     else {
+       val_idx <- which(y_values>=last & y_values < step)
+       x_mean <- mean(x_values[val_idx], na.rm = TRUE)
+       y_mean <- mean (last, step, na.rm = TRUE)
+       
+       last <- step
+       
+       out_mat[idx,1] <- y_mean
+       out_mat[idx,2] <- x_mean
+       
+       idx <- idx+1
+     }
+     
+   }
+  out_df <- as.data.frame(out_mat) 
+  return(out_df)
+}
+
+```
+
+
+
+Step 5: Plot the reaction type as a function of how far the attacker landed in the center.
+        Plot proportion correct answers as a fuction of where the attacker landed.
+        Do the same with the reaction time. (Maybe only for trial with a response)
+        
+        
+```{r}
+# proportion correct responses as response to attacker - center goal
+
+correct_resp_attacker_center <- integrate_over(cleaned_d$resp_correct, cleaned_d$yDist, 10)
+colnames(correct_resp_attacker_center) <- c('attacker_pos', 'response')
+
+
+plot1 <- ggplot(correct_resp_attacker_center, aes(attacker_pos,response))+
+  geom_point()
+
+plot1
+
+reaction_time_attacker_center <- integrate_over(cleaned_d$rea_time,cleaned_d$yDist, 10)
+colnames(reaction_time_attacker_center) <- c('attacker_pos', 'rea_time')
+
+
+plot2 <- ggplot(reaction_time_attacker_center, aes(attacker_pos,rea_time))+
+  geom_point()
+
+plot2
+
+
+# correct responses as a function of the first stimulus
+
+correct_responses_target_center <- integrate_over(cleaned_d$resp_correct,cleaned_d$pos_vals_.1, 10)
+colnames(correct_responses_target_center) <- c('target_pos', 'response')
+
+
+plot3 <- ggplot(correct_responses_target_center, aes(target_pos,response))+
+  geom_point()
+
+plot3
+
+
+```
+
+Step 6: Normalize the targets to the attacker end point
+
+Step 7: Normalize the targets to the goal center
+
+Step 8: Plot the mean presented target location at time t before movement onset, stimulus onset, and movement offset.
+
+
+```{r}
+# only trials with go response
+go_d <- cleaned_d[which(cleaned_d$goResp==1),]
+
+# in which column index is the first 
+idx_first_target <- which(colnames(go_d)=='pos_vals_.1')
+idx_move_on <- idx_first_target + go_d$posMovStart
+idx_move_off <- idx_first_target + go_d$posMovEnd
+
+rev_mat <- matrix(ncol = max(idx_move_on-idx_first_target), nrow = length(go_d[,1]))
+rev_frame   <- as.data.frame(rev_mat)
+
+
+for (r in 1:length(go_d[,1])){
+  
+  start_target <- idx_move_on[r]
+  target_seq   <- go_d[r,start_target:idx_first_target]
+  rev_frame[r,16] <- go_d$resp_correct[r]
+  rev_frame[r,1:length(target_seq)] <- target_seq
+}
+
+
+
+
+
+
+```
+
+Step 9: Randomly permute
+
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

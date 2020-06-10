@@ -236,7 +236,7 @@ function [trialData,dataLog]  = runSingleTrial(trial, design, visual)
     trialData.yDist           = abs(travelyDist) - abs(goalypost);
     trialData.goalY           = goalypost;
     trialData.trajectory      = trial.trajectory;
-    trialData.posSet          = trial.posSet;
+    trialData.posSet          = posSet;
     trialData.posMovStart     = tar_pos_movStart;
     trialData.posMovEnd       = tar_pos_movEnd;
     
