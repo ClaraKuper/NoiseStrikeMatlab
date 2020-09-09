@@ -25,6 +25,9 @@ design.fixDurJ   = 0.5; % Additional jitter to fixation
 
 design.iti       = 0.2; % Inter stimulus interval
 
+% response key
+design.response = KbName('space');
+
 % conditions
 design.nGoalPos   = 5;
 design.nyDist     = 8;  % 8 different possible trajectories
@@ -34,7 +37,7 @@ design.nyDist     = 8;  % 8 different possible trajectories
 design.fixWidth = 1;
 design.fixHeight = 1;
 design.fixRad = 0.2;
-design.fixPos = [25,0];
+design.fixPos = [0,0];
 
 % Attacker
 design.attackerRad = 1;
@@ -48,14 +51,14 @@ design.attackerVisible =  0.6;
 
 % Goal
 design.goalHeight = 4;
-design.goalxPos   = 0;
+design.goalxPos   = 25;
 design.goalShift  = 5;
 design.goalyPos   = linspace(-design.goalShift, design.goalShift, design.nGoalPos);
 
 % Target
 
 design.targetRad        = 1;
-design.targetxPos       = 0;
+design.targetxPos       = design.goalxPos;
 design.targetyPos_range = [design.goalHeight*0.9, -design.goalHeight*0.9];
 design.targetDur        = 5; % target duration in frames
 
@@ -68,8 +71,8 @@ design.travelFrames = design.travelxDist * scr.refRate;
 
 % overall information %
 % number of blocks and trials in the first round
-design.nBlocks = 5;
-design.nTrials = 5; 
+design.nBlocks = 1; %5;
+design.nTrials = 1; %5; 
 
 % build
 for b = 1:design.nBlocks
@@ -81,7 +84,9 @@ for b = 1:design.nBlocks
                 % define goal position
                 trial(t).goalPos = goal;
                 % define yDist
-                trial(t).yDist = getytar(goal, yDist, design.goalHeight);
+                % instead of a distance, this becomes the starting point
+                trial(t).yPosAttacker = getytar(goal, yDist, design.goalHeight);
+                %trial(t).yDist = getytar(goal, yDist, design.goalHeight);
                 % define target positions
                 trial(t).posSet = drawposset(goal,design.targetyPos_range,60);
                 % define fixation duration

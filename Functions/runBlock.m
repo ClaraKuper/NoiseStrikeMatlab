@@ -1,6 +1,6 @@
-function [blockData,dataLog] = runBlock(b)
+function blockData = runBlock(b)
 
-    global visual design
+    global visual design settings
     messageStart = sprintf('This is block no. %i', b);
     DrawFormattedText(visual.window, messageStart, 'center', 200, visual.textColor);
     trials_total = design.nTrialsPB;
@@ -13,7 +13,7 @@ function [blockData,dataLog] = runBlock(b)
         
         trial = design.b(b).trial(t); 
         
-        [blockData.trial(t),dataLog.trial(t)] = runSingleTrial(trial, design, visual);
+        blockData.trial(t) = runSingleTrial(trial, design, visual, settings);
        
         
         if ~ blockData.trial(t).success

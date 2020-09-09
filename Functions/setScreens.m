@@ -7,7 +7,7 @@ function setScreens
 
   % in case a test version is running on a different screen with
   % worse syncing properties
-  if ~ settings.TEST
+  if ~ settings.SYNCTEST
       Screen('Preference', 'SkipSyncTests', 1);
   end
 
@@ -39,22 +39,17 @@ function setScreens
       error('Color depth per channel is set incorrectly.\nIt should be: %d', res.pixelSize/3);
   end
   
-  switch settings.MODE
-    case 1 % touchPixx
-      % initialize the touchpixx 
-      % Open datapixx and init PsychImaging
-      Datapixx('Open');                                                           %% Opens the Datapixx
-      PsychImaging('PrepareConfiguration');
-      %PsychImaging('AddTask', 'General', 'UseDataPixx');                         %% Would internally open the Datapixx a second time, ...
-                                                                                  % uses PSYNC that can crash with certain system settings
-    
-    case 2 % eyeLink
-      % intialize the eyelink
-      mode = 'link';
-  end
+  
+  % Open datapixx and init PsychImaging
+  Datapixx('Open');                                                           %% Opens the Datapixx
+  PsychImaging('PrepareConfiguration');
+
   
   visual.white = WhiteIndex(scr.expScreen);
   visual.black = BlackIndex(scr.expScreen);
+  visual.bgcolor = visual.black;
+  visual.fgcolor = visual.white;
+  
   
   % Open windows
   [visual.window, visual.windowRect] = PsychImaging('OpenWindow', scr.expScreen, visual.black);
