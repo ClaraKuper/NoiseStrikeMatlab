@@ -4,7 +4,6 @@ out_table = [];
 
 for b = 1:length(data.block)
     bl = data.block(b);
-    bl.trial;
     table_full = struct2table(bl.trial);
     table_reduced = table_full;
     table_reduced(:,'posSet') = [];
@@ -14,4 +13,4 @@ for b = 1:length(data.block)
     end
     
     out_table = [out_table; table_reduced];
-end
+endfunction

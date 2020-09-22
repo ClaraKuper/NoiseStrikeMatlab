@@ -88,7 +88,13 @@ try
         settings.eye_used = el.LEFT_EYE; % use left eye
     end
     disp([num2str(GetSecs) ' Eyelink initialized.']);
-    
+	
+	% Start EyeLink recording
+    Eyelink('startrecording');
+    WaitSecs(0.1);                                                          % wait before actually recording
+    Eyelink('Message', 'SYNCTIME');
+    Eyelink('Message', 'RECORD_START');
+	
         % For testing: do we want continuous logging?:
     include_continuous = true;
 
@@ -104,10 +110,13 @@ try
     % Display Instructions:
     DrawFormattedText(visual.window, 'Block the goal when the attacker hits', 'center', 200, visual.textColor);
     Screen('Flip',visual.window);
+	b_i = 0
     WaitSecs(2);
     
+	
     for b = design.blockOrder
-        data.block(b) = runBlock(b);
+		b_i = B_i + 1
+        data.block(b) = runBlock(b, b_i);
     end    
     
 catch me

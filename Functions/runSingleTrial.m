@@ -6,10 +6,6 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
     
     t_initPixx = Datapixx('GetTime');  % Save when the DataPixx Log was initiated
     
-    % Start EyeLink recording
-    Eyelink('StartRecording');
-    WaitSecs(0.1);                                                          % wait before actually recording
-    Eyelink('Message', 'SYNCTIME');
     
 
     % prepare the trial
@@ -74,6 +70,8 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
     trial_succ = 1;
     
     % Run the trial. Display the goal and a moving ball
+	Eyelink('Message', 'TRIAL_START');
+	
     Screen('DrawDots', visual.window, attackerPos, attackerSize, attackerColor, [], 2); % attacker
     Screen('DrawDots', visual.window, targetPos, targetSize, targetColor, [], 2); % target
     
@@ -199,6 +197,7 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
     t_end           = Datapixx('GetTime');
 %     dataLog.message = [dataLog.message, sprintf('Trial End at %f \n', t_end)];
     Datapixx('StopTouchpixxLog');  
+	Eyelink('Message', 'TRIAL_END');
 
     rea_time = t_movStart - t_go;
     mov_time = t_movEnd - t_movStart; 
