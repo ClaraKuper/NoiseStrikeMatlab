@@ -6,7 +6,7 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
     
     t_initPixx = Datapixx('GetTime');  % Save when the DataPixx Log was initiated
     
-    
+    Eyelink('StartRecording');
 
     % prepare the trial
     % set stimuli
@@ -41,7 +41,7 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
     end
     
     % Draw stuff on Eyelink:
-    Eyelink('command',sprintf('draw_box %d %d %d %d', attackerPos(1)+visual.rangeAccept/8, attackerPos(1)-visual.rangeAccept/8, attackerPos(2)+visual.rangeAccept/8, attackerPos(2)-visual.rangeAccept))
+    %Eyelink('command',sprintf('draw_box %d %d %d %d', attackerPos(1)+visual.rangeAccept/8, attackerPos(1)-visual.rangeAccept/8, attackerPos(2)+visual.rangeAccept/8, attackerPos(2)-visual.rangeAccept))
     
     
     % Initialize timing and monitoring parameters
@@ -49,6 +49,7 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
     on_fix_eye     = false;
     kb_released    = false;
     goresp         = 0;
+    calibrate      = false;
     
     tar_pos_movStart = 0;
     tar_pos_movEnd   = 0;
@@ -56,6 +57,7 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
     % timing
     t_draw     = NaN;  % the stimulus was on screen
     t_kbdown   = NaN;  % the fixation was touched
+    t_eyesfixed= NaN;  % the observer looked at the start
     t_go       = NaN;  % the attacker started moving
     t_disap    = NaN;  % the attacker disappeared
     t_movStart = NaN;  % the movement started
@@ -85,25 +87,22 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
         Datapixx('RegWrRd');
       
         % are there any keykeyboard presses detected?
-        [~, kbtim, keyCode] = KbCheck;
-        if keyCode(design.response)
-            
+        [~, ~ , keyCode] = KbCheck;
+        if keyCode(design.response) && ~ on_fix_hand
             on_fix_hand  = true;
-            t_kbdown     = kbtim;
-            t_kb_downPixx = Datapixx('GetTime');
-            WaitSecs(trial.fixT);
+            t_kbdown = Datapixx('GetTime');
         end
-        
-        if Eyelink( 'NewFloatSampleAvailable') > 0
+        if Eyelink('NewFloatSampleAvailable') > 0
             % get the sample in the form of an event structure
-            evt = Eyelink( 'NewestFloatSample');
+            evt = Eyelink('NewestFloatSample');
             % if we do, get current gaze position from sample
             x = evt.gx(settings.eye_used+1); % +1 as we're accessing MATLAB array
             y = evt.gy(settings.eye_used+1);
             % do we have valid data and is the pupil visible?
             if  attackerPos(1) - visual.rangeAccept < x && x < attackerPos(1) + visual.rangeAccept &&...
-                attackerPos(2) - visual.rangeAccept < y && y < attackerPos(2) + visual.rangeAccept
+                attackerPos(2) - visual.rangeAccept < y && y < attackerPos(2) + visual.rangeAccept && ~ on_fix_eye
                 on_fix_eye = true;
+                t_eyesfixed = Datapixx('GetTime');
             end
         end
         
@@ -112,7 +111,8 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
         Screen('Flip', visual.window);
         flip_count = flip_count +1;
     end
-
+    
+    WaitSecs(design.fixDur);
     % move the attacker
     % most crucial timing in this loop
     while on_fix_hand && isnan(t_cross)
@@ -134,13 +134,10 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
             Screen('DrawDots', visual.window, attackerPos, attackerSize, attackerColor, [], 2); % attacker
         elseif isnan(t_disap)
             t_disap = Datapixx('GetTime');
-%             dataLog.message = [dataLog.message, sprintf('The attacker disappeared at %f \n', t_disap)];
         end
         
         %Draw everything on the screen and show
-        Screen('DrawDots', visual.window, targetPos, targetSize, targetColor, [], 2); % target
-%         Screen('DrawDots', visual.window, fixPos, fixSize, fixColor, [], 2); % fixation
-        
+        Screen('DrawDots', visual.window, targetPos, targetSize, targetColor, [], 2); % target        
         Screen('Flip', visual.window);
         
         % Get the touchpixx status
@@ -149,10 +146,9 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
         flip_count = flip_count +1;
         
         % check if keyboard has been released
-        [~, kbtim, keyCode] = KbCheck;
+        [~, ~, keyCode] = KbCheck;
         if ~ keyCode(design.response) 
-            t_movStart      = kbtim; %timetag(status.newLogFrames);
-            t_movStartPixx  = Datapixx('GetTime');
+            t_movStart      = Datapixx('GetTime');
             kb_released     = true;
 %             dataLog.message = [dataLog.message, sprintf('The hand moved at %f\n', t_movStartPixx)];f
             tar_pos_movStart = posId;
@@ -160,10 +156,7 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
         
         % Check for events
         if status.newLogFrames                                              % something new happened
-            [touches, timetag] = Datapixx('ReadTouchpixxLog');
-%             dataLog.touches    = [dataLog.touches,touches];                 % write new information to log file
-%             dataLog.timetag    = [dataLog.timetag, timetag];
-%             dataLog.frames     = status.newLogFrames;
+            [touches, ~] = Datapixx('ReadTouchpixxLog');
             touch_X = visual.mx*touches(1,status.newLogFrames)+visual.bx;   % Convert touch to screen coordinates
             touch_Y = visual.my*touches(2,status.newLogFrames)+visual.by;   % We use the one-before-last available touch information
             
@@ -174,9 +167,7 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
             if ~ goresp && ...
                     goalPos(1) - visual.rangeAccept < touch_X && touch_X < goalPos(1) + visual.rangeAccept &&...
                     goalPos(2) - visual.rangeAccept < touch_Y && touch_Y < goalPos(2) + visual.rangeAccept
-               t_movEnd        = timetag(status.newLogFrames);                    % we want a time tag when the target was touched for the first time
-               t_movEndPixx    = Datapixx('GetTime');
-%                dataLog.message = [dataLog.message, sprintf('The hand reached the target at %f\n',t_movEndPixx)];
+               t_movEnd    = Datapixx('GetTime');                    % we want a time tag when the target was touched for the first time
                goresp          = 1;
                tar_pos_movEnd = posId;
             end
@@ -184,12 +175,19 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
         if attackerPos(1) >= goalPos(1)
             Datapixx('RegWrRd');
             t_cross   = Datapixx('GetTime');
-%             dataLog.message = [dataLog.message, sprintf('The ball hit the target at %f\n', t_cross)];
             if isnan(t_movEnd)
                 % set a time for the movement end
                 t_movEnd = t_cross;
                 goresp  = 0;
             end
+        end
+        % check if eyetracker is still recording:
+        error = Eyelink('EyeAvailable');
+        if error == -1
+            sprintf('Sth is wrong with the eyelink');
+            Eyelink('Message', 'TRIAL_STOPPED');
+            calibrate = true;
+            break
         end
     end
     
@@ -198,13 +196,16 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
 %     dataLog.message = [dataLog.message, sprintf('Trial End at %f \n', t_end)];
     Datapixx('StopTouchpixxLog');  
 	Eyelink('Message', 'TRIAL_END');
+   
 
     rea_time = t_movStart - t_go;
     mov_time = t_movEnd - t_movStart; 
     
     % present feedback
-
-    if goresp && hitgoal 
+    if calibrate
+        trial_succ = 0;
+        EyelinkDoTrackerSetup(el);
+    elseif goresp && hitgoal 
         DrawFormattedText(visual.window, 'Well done!', 'center', 'center', visual.textColor);
     elseif goresp && ~hitgoal 
         DrawFormattedText(visual.window, 'False Alarm', 'center', 'center', visual.textColor);
@@ -223,6 +224,7 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
     end
 
     Screen('Flip', visual.window);
+    Eyelink('Stoprecording');
     
     trialData.success         = trial_succ;                                 % 1 = success 
                                                                             % 0 = unknown error
@@ -231,6 +233,7 @@ function trialData  = runSingleTrial(trial, design, visual,settings)
     trialData.initPixx        = t_initPixx;
     trialData.t_draw          = t_draw;
     trialData.t_kbdown        = t_kbdown;
+    trialData.t_eyesfixed     = t_eyesfixed;
     trialData.t_go            = t_go;
     trialData.t_disap         = t_disap;
     trialData.t_movStart      = t_movStart;

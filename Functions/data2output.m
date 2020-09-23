@@ -13,4 +13,4 @@ for b = 1:length(data.block)
     end
     
     out_table = [out_table; table_reduced];
-endfunction
+end

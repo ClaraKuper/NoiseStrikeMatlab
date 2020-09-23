@@ -20,8 +20,9 @@ design.fixReq = 0;
 design.InclFix = 1;
 
 % Timing %
-design.fixDur    = 0.5; % Fixation duration till trial starts [s]
-design.fixDurJ   = 0.5; % Additional jitter to fixation
+design.fixDur_fix   = 0.5; % Fixation duration till trial starts [s]
+design.fixDurJ      = 0.25; % Additional jitter to fixation
+design.fixDur       = design.fixDur_fix + rand * design.fixDurJ;
 
 design.iti       = 0.2; % Inter stimulus interval
 
@@ -71,8 +72,8 @@ design.travelFrames = design.travelxDist * scr.refRate;
 
 % overall information %
 % number of blocks and trials in the first round
-design.nBlocks = 1; %5;
-design.nTrials = 1; %5; 
+design.nBlocks = 5;
+design.nTrials = 5; 
 
 % build
 for b = 1:design.nBlocks
