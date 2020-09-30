@@ -44,7 +44,7 @@ design.fixPos = [0,0];
 design.attackerRad = 1;
 design.attackerxPos= -25;
 design.attackeryPos= 0;
-design.travelDur   = 0.7; % time in sec
+design.travelDur   = 0.8; % time in sec
 design.yDist       = linspace(1,design.nyDist,design.nyDist);
 design.xSpeed      = 0;  % initialize only, change later
 design.attackerVisible =  0.6;
@@ -61,7 +61,7 @@ design.goalyPos   = linspace(-design.goalShift, design.goalShift, design.nGoalPo
 design.targetRad        = 1;
 design.targetxPos       = design.goalxPos;
 design.targetyPos_range = [design.goalHeight*0.9, -design.goalHeight*0.9];
-design.targetDur        = 5; % target duration in frames
+design.targetDur        = 6; % target duration in frames
 
 design.rangeAccept = 2;
 design.rangeCalib  = 1;
@@ -72,7 +72,7 @@ design.travelFrames = design.travelxDist * scr.refRate;
 
 % overall information %
 % number of blocks and trials in the first round
-design.nBlocks = 2;%5;
+design.nBlocks = 1;%5;
 design.nTrials = 1;%5; 
 
 % build

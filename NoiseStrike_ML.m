@@ -72,6 +72,14 @@ try
     fprintf('\nNoiseStrike\n');
     HideCursor;
     
+    % Configure DATAPixx/TOUCHPixx
+    Datapixx('SetVideoMode', 0);                        % Normal passthrough
+    Datapixx('EnableTouchpixx');                        % Turn on TOUCHPixx hardware driver
+    Datapixx('SetTouchpixxStabilizeDuration', 0.01);    % stable coordinates in secs before recognising touch
+    Datapixx('RegWrRd');
+
+    calibrate_touchpixx();
+    
     % initialize EyeLink
     el = [];
     
@@ -88,22 +96,18 @@ try
     % For testing: do we want continuous logging?:
     include_continuous = true;
 
-    % Configure DATAPixx/TOUCHPixx
-    Datapixx('SetVideoMode', 0);                        % Normal passthrough
-    Datapixx('EnableTouchpixx');                        % Turn on TOUCHPixx hardware driver
-    Datapixx('SetTouchpixxStabilizeDuration', 0.01);    % stable coordinates in secs before recognising touch
-    Datapixx('RegWrRd');
-
-    calibrate_touchpixx();
     
     %% Run trials
     % Display Instructions:
+    ListenChar(0);
     Eyelink('Message', 'EXPERIMENT STARTED');
     DrawFormattedText(visual.window, 'Block the goal when the attacker hits', 'center', 200, visual.textColor);
+    DrawFormattedText(visual.window, 'Press any key to start', 'center', 'center', visual.textColor);
     Screen('Flip',visual.window);
     WaitSecs(2);
     b_i = 1;
     for b = design.blockOrder
+        KbPressWait;
         data.block(b) = runBlock(b, b_i);
         b_i = b_i+1;
     end    

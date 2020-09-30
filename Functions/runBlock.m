@@ -9,10 +9,10 @@ function blockData = runBlock(b, b_i)
     Screen('Flip',visual.window);
     WaitSecs(2);
     
+    Eyelink('Message', sprintf('BLOCK_START, %i', b));
     while t <=  trials_total
         
         trial = design.b(b).trial(t); 
-        Eyelink('Message', sprintf('BLOCK_START, %i', b));
         blockData.trial(t) = runSingleTrial(trial, design, visual, settings, t);
        
         
@@ -23,11 +23,10 @@ function blockData = runBlock(b, b_i)
         
         end
         
-        t = t+1;
-		Eyelink('Message', sprintf('BLOCK_END, %i', b));
-        
+        t = t+1;        
     end
     
+    Eyelink('Message', sprintf('BLOCK_END, %i', b));
     Screen('Flip', visual.window);
     WaitSecs(2);
 end
