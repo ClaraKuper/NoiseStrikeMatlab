@@ -154,7 +154,7 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t)
         
         % check if keyboard has been released
         [~, ~, keyCode] = KbCheck;
-        if ~ keyCode(design.response) 
+        if ~ keyCode(design.response) &&  ~kb_released
             Eyelink('Message', 'START HAND MOVEMENT');
             t_movStart      = Datapixx('GetTime');
             kb_released     = true;

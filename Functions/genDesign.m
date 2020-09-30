@@ -72,7 +72,7 @@ design.travelFrames = design.travelxDist * scr.refRate;
 
 % overall information %
 % number of blocks and trials in the first round
-design.nBlocks = 1;%5;
+design.nBlocks = 2;%5;
 design.nTrials = 1;%5; 
 
 % build

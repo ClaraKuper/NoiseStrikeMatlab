@@ -74,7 +74,7 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t)
     
     % Run the trial. Display the goal and a moving ball
 	Eyelink('Message', sprintf('TRIAL_START, %i', t));
-    Eyelink('Message', 'SYNCTIME');
+    Eyelink('Message', 'TRIAL SYNCTIME');
 	
     Screen('DrawDots', visual.window, attackerPos, attackerSize, attackerColor, [], 2); % attacker
     Screen('DrawDots', visual.window, targetPos, targetSize, targetColor, [], 2); % target
@@ -154,7 +154,7 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t)
         
         % check if keyboard has been released
         [~, ~, keyCode] = KbCheck;
-        if ~ keyCode(design.response) 
+        if ~ keyCode(design.response) &&  ~kb_released
             Eyelink('Message', 'START HAND MOVEMENT');
             t_movStart      = Datapixx('GetTime');
             kb_released     = true;

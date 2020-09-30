@@ -1,11 +1,6 @@
 % Experiment with TouchScreen
 % 2020 by Clara Kuper
-% ToDo Restructure trials to match NoiseStrike Layout 
 % check timing
-% include eye-tracking
-
-% based on ptb demos by Peter Scarfe http://peterscarfe.com/ptbtutorials.html
-% and vpixx demo 17 http://www.vpixx.com/manuals/psychtoolbox/html/Demo17.html
 
 % System setup
 % Clear the workspace and the screen
@@ -41,6 +36,7 @@ global settings visual design
 
 settings.TEST   = 1; % Track or no Track
 settings.SYNCTEST = 1; % run synchtest or not
+settings.eye_used = str2num(input('\nWhich eye do we track (0 = left, 1 = right):  ','s'));
  
 %% start the experiment loop, errors in this loop will be caught
 try
@@ -83,13 +79,13 @@ try
     
     % first calibration
     calibresult = EyelinkDoTrackerSetup(el);
-    settings.eye_used = Eyelink('EyeAvailable'); % get eye that's tracked
-    if settings.eye_used == el.BINOCULAR % if both eyes are tracked
-        settings.eye_used = el.LEFT_EYE; % use left eye
-    end
+    eye_available = Eyelink('EyeAvailable'); % get eye that's tracked
+
+    disp([num2str(settings.eye_used) ' This eye was used']);
+    disp([num2str(eye_available) ' This eye was available']);
     disp([num2str(GetSecs) ' Eyelink initialized.']);
     
-        % For testing: do we want continuous logging?:
+    % For testing: do we want continuous logging?:
     include_continuous = true;
 
     % Configure DATAPixx/TOUCHPixx
@@ -102,6 +98,7 @@ try
     
     %% Run trials
     % Display Instructions:
+    Eyelink('Message', 'EXPERIMENT STARTED');
     DrawFormattedText(visual.window, 'Block the goal when the attacker hits', 'center', 200, visual.textColor);
     Screen('Flip',visual.window);
     WaitSecs(2);
@@ -110,7 +107,7 @@ try
         data.block(b) = runBlock(b, b_i);
         b_i = b_i+1;
     end    
-    
+    Eyelink('Message', 'EXPERIMENT ENDED');
 catch me
     rethrow(me);
     reddUp; %#ok<UNRCH>
