@@ -86,11 +86,21 @@ try
     [el, error] = initEyelink(subCode);
     
     % first calibration
-    calibresult = EyelinkDoTrackerSetup(el);
     eye_available = Eyelink('EyeAvailable'); % get eye that's tracked
+    
+    if ~ settings.eye_used == eye_available
+        disp('The eye set for tracking does not match the tracked eye. Please shut down the EyeLink and correct.')
+        WaitSecs(3);
+        ListenChar(1);
+        Eyelink('Shutdown');
 
-    disp([num2str(settings.eye_used) ' This eye was used']);
-    disp([num2str(eye_available) ' This eye was available']);
+        ShowCursor;
+        Screen('CloseAll')
+        expEnd = toc;
+
+        sprintf('This experiment lasted %i minutes', round(expEnd/60,1));
+    end
+    
     disp([num2str(GetSecs) ' Eyelink initialized.']);
     
     % For testing: do we want continuous logging?:
@@ -107,8 +117,11 @@ try
     WaitSecs(2);
     b_i = 1;
     for b = design.blockOrder
+        calibresult = EyelinkDoTrackerSetup(el);
+        DrawFormattedText(visual.window, 'Press any key to start', 'center', 'center', visual.textColor);
+        Screen('Flip',visual.window);
         KbPressWait;
-        data.block(b) = runBlock(b, b_i);
+        data.block(b) = runBlock(b, b_i, el);
         b_i = b_i+1;
     end    
     Eyelink('Message', 'EXPERIMENT ENDED');
