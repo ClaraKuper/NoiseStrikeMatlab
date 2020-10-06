@@ -42,7 +42,7 @@ design.fixPos = [0,0];
 
 % Attacker
 design.attackerRad = 1;
-design.attackerxPos= -25;
+design.attackerxPos= -10;
 design.attackeryPos= 0;
 design.travelDur   = 0.8; % time in sec
 design.yDist       = linspace(1,design.nyDist,design.nyDist);
@@ -52,7 +52,7 @@ design.attackerVisible =  0.6;
 
 % Goal
 design.goalHeight = 4;
-design.goalxPos   = 25;
+design.goalxPos   = 10;
 design.goalShift  = 5;
 design.goalyPos   = linspace(-design.goalShift, design.goalShift, design.nGoalPos);
 

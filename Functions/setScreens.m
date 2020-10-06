@@ -13,7 +13,7 @@ function setScreens
 
   % Define some parameters for the screen in cabin 8
 
-  scr.subDist = 430;          % subject distance (mm)
+  scr.subDist = 530;          % subject distance (mm)
   scr.refRate = 120;          % refresh rate (Hz)    
   scr.xres    = 1920;         % x resolution (px)
   scr.yres    = 1080;         % y resolution (px)
@@ -60,7 +60,7 @@ function setScreens
   scr.hz = 1/ref;
   visual.hz = scr.hz;
   
-  visual.ppd = va2pix(1,scr);
+  visual.ppd = dva2pix(1,scr);
 
   visual.winWidth = visual.windowRect(3) - visual.windowRect(1);
   visual.winHeight = visual.windowRect(4) - visual.windowRect(2);

@@ -16,8 +16,10 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     ySpeed      = 0; %travelyDist/visual.hz;    
     xSpeed      = visual.xSpeed;
     goalPos     = [visual.goalxPos, goalypost];
+    visual.goalxPos
     
     attackerPos = [visual.attackerPos(1), trial.yPosAttacker*visual.ppd + visual.yCenter]; %visual.attackerPos;
+    visual.attackerPos(1)
     attackerSize = visual.attackerRad;
     attackerColor = visual.attackerColor;
     attackerVisible = visual.attackerVisible;
