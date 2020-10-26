@@ -18,8 +18,8 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     goalPos     = [visual.goalxPos, goalypost];
     visual.goalxPos
     
-    attackerPos = [visual.attackerPos(1), trial.yPosAttacker*visual.ppd + visual.yCenter]; %visual.attackerPos;
-    visual.attackerPos(1)
+    yPosAttacker = getytar(trial.goalPos, design.goalHeight, trial.difficulty, trial.in_out, trial.up_down);
+    attackerPos = [visual.attackerPos(1), yPosAttacker*visual.ppd + visual.yCenter]; %visual.attackerPos;
     attackerSize = visual.attackerRad;
     attackerColor = visual.attackerColor;
     attackerVisible = visual.attackerVisible;
@@ -36,7 +36,7 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
 %     fixColor = visual.fixColor;
 
     % events and responses
-    if 2 < trial.trajectory && trial.trajectory < 7
+    if trial.in_out < 0
         hitgoal = 1;
     else
         hitgoal = 0;
@@ -112,6 +112,12 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
                 Eyelink('Message', 'EYES_FIXATED');
                 t_eyesfixed = Datapixx('GetTime');
             end
+            
+            time_passed = Datapixx('GetTime') - t_draw;
+            if time_passed > design.wait_to_fix
+                fixation_break = true;
+                break
+            end
 %        else
 %            sprintf('Sth is wrong with the eyelink');
 %            Eyelink('Message', sprintf('TRIAL_STOPPED %i',t));
@@ -129,7 +135,7 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     WaitSecs(design.fixDur);
     % move the attacker
     % most crucial timing in this loop
-    while on_fix_hand && isnan(t_cross)
+    while on_fix_hand && on_fix_eye && isnan(t_cross)
         Datapixx('RegWrRd');
         if isnan(t_go) % set time stamp the first time this is executed
             Eyelink('Message', 'ATTACKER_MOVED');
@@ -204,7 +210,7 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
         
         % get gaze position to check if it's on screen
         evt = Eyelink('NewestFloatSample');
-        if evt.pa(settings.eye_used+1) < 1 % is the pupil visible?
+        if isnan(t_cross) && evt.pa(settings.eye_used+1) < 1 % is the pupil visible?
             fixation_break = true;
             Eyelink('Message', 'FIXATION_BREAK');
         end
@@ -276,7 +282,10 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     
     %trialData.yDist           = abs(travelyDist) - abs(goalypost);
     trialData.goalY           = goalypost;
-    trialData.trajectory      = trial.trajectory;
+    trialData.in_out          = trial.in_out;
+    trialData.up_down         = trial.up_down;
+    trialData.difficulty      = trial.difficulty;
+    trialData.attackerY       = yPosAttacker;
     trialData.posSet          = posSet;
     trialData.posMovStart     = tar_pos_movStart;
     trialData.posMovEnd       = tar_pos_movEnd;

@@ -36,31 +36,15 @@ global settings visual design
 
 settings.TEST   = 1; % Track or no Track
 settings.SYNCTEST = 1; % run synchtest or not
-settings.eye_used = str2num(input('\nWhich eye do we track (0 = left, 1 = right):  ','s'));
+settings.eye_used = str2double(input('\nWhich eye do we track (0 = left, 1 = right):  ','s'));
  
 %% start the experiment loop, errors in this loop will be caught
 try
-    newFile = 0;
-        while ~newFile
-            subCode = getID(expCode);
-
-            subPath = strcat('./Data/',subCode);
-
-            % create data file
-            datFile    = sprintf('%s.mat',subPath);
-            datLogFile = sprintf('%sLog.mat',subPath);
-            if exist(datFile,'file')
-                o = input('>>>> This file exists already. Should I overwrite it [y / n]? \n','s');
-                if strcmp(o,'y')
-                    newFile = 1;
-                end
-            else
-                newFile = 1;
-            end
-        end
-        
-    setScreens;
+    % get participant ID:
+    [datFile, subCode, subPath] = getSubjectCode(expCode);
     
+    % prepare the screens    
+    setScreens;
                                                                                 
     % generate design 
     genDesign(subCode);
@@ -81,15 +65,13 @@ try
     calibrate_touchpixx();
     
     % initialize EyeLink
-    el = [];
-    
     [el, error] = initEyelink(subCode);
     
     % first calibration
     eye_available = Eyelink('EyeAvailable'); % get eye that's tracked
     
     if ~ settings.eye_used == eye_available
-        disp('The eye set for tracking does not match the tracked eye. Please shut down the EyeLink and correct.')
+        disp('The eye set for tracking does not match the tracked eye.')
         WaitSecs(3);
         ListenChar(1);
         Eyelink('Shutdown');
@@ -103,42 +85,59 @@ try
     
     disp([num2str(GetSecs) ' Eyelink initialized.']);
     
-    % For testing: do we want continuous logging?:
-    include_continuous = true;
-
+    %% run the setup block
+    % calibrate
+    calibresult = EyelinkDoTrackerSetup(el);
     
-    %% Run trials
     % Display Instructions:
     ListenChar(0);
     Eyelink('Message', 'EXPERIMENT STARTED');
     DrawFormattedText(visual.window, 'Block the goal when the attacker hits', 'center', 200, visual.textColor);
     DrawFormattedText(visual.window, 'Press any key to start', 'center', 'center', visual.textColor);
     Screen('Flip',visual.window);
-    WaitSecs(2);
+    KbPressWait;
+    
+    % run the first block to adjust difficulty
     b_i = 1;
+    b = 1;
+    
+    data.block(b) = runBlock(b, b_i, el);
+    
+    % compute at what difficulty the participant made 75% correct responses
+    % difficulty = get_difficulty()
+    
+    b_i = b_i+1;
+  
+    %% run normal blocks
+    
     for b = design.blockOrder
-        calibresult = EyelinkDoTrackerSetup(el);
+        
+        %% evaluate perfomance and return difficulty level for next block
+        
+        design.b(b).difficulty = 0.5; % set here for test reasons will be defined differently later
+        
+        % off we go 
         DrawFormattedText(visual.window, 'Press any key to start', 'center', 'center', visual.textColor);
         Screen('Flip',visual.window);
         KbPressWait;
         data.block(b) = runBlock(b, b_i, el);
         b_i = b_i+1;
-    end    
+    end   
+    
     Eyelink('Message', 'EXPERIMENT ENDED');
+    DrawFormattedText(visual.window, 'Thanks for your participation', 'center', 'center', visual.textColor);
+    Screen('Flip',visual.window);
+    
 catch me
     rethrow(me);
     reddUp; %#ok<UNRCH>
 end
     
-% Clear the screen. "sca" is short hand for "Screen CloseAll". This clears
-% all features related to PTB. Note: we leave the variables in the
-% workspace so you can have a look at them if you want.
-% For help see: help sca
-
+% save all the data
 data_table = [data2output(data) position2table(design)];
 writetable(data_table, sprintf('./Data/%s_table.csv',design.vpcode));
-
 save(datFile,'data');
+
 % save(datLogFile,'dataLog');
 save(sprintf('./Design/%s_design.mat',design.vpcode),'design'); %
 
@@ -170,6 +169,11 @@ end
 WaitSecs(3);
 ListenChar(1);
 Eyelink('Shutdown');
+
+% Clear the screen. "sca" is short hand for "Screen CloseAll". This clears
+% all features related to PTB. Note: we leave the variables in the
+% workspace so you can have a look at them if you want.
+% For help see: help sca
 
 ShowCursor;
 Screen('CloseAll')
