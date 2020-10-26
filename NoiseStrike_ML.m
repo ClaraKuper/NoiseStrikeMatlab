@@ -117,9 +117,6 @@ try
         design.b(b).difficulty = 0.5; % set here for test reasons will be defined differently later
         
         % off we go 
-        DrawFormattedText(visual.window, 'Press any key to start', 'center', 'center', visual.textColor);
-        Screen('Flip',visual.window);
-        KbPressWait;
         data.block(b) = runBlock(b, b_i, el);
         b_i = b_i+1;
     end   

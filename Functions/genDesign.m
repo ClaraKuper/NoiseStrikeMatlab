@@ -23,7 +23,7 @@ design.response = KbName('space');
 
 % conditions
 design.nGoalPos   = 5;
-design.nyDist_b1  = 10;  % trajectories to be tested in the first block
+design.nyDist_b1  = 5;  % trajectories to be tested in the first block
 
 % position and size variables, in dva     
 % Fixation
