@@ -132,10 +132,12 @@ end
     
 % save all the data
 data_table = [data2output(data) position2table(design)];
-writetable(data_table, sprintf('./Data/%s_table.csv',design.vpcode));
+writetable(data_table, sprintf('./Data/%s_dat.csv',design.vpcode));
 save(datFile,'data');
 
-% save(datLogFile,'dataLog');
+% save the design
+design_table = design2output(design);
+writetable(design_table, sprintf('./Design/%s_des.csv',design.vpcode));
 save(sprintf('./Design/%s_design.mat',design.vpcode),'design'); %
 
 Datapixx('DisableTouchpixx');
