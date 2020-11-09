@@ -131,7 +131,7 @@ catch me
 end
     
 % save all the data
-data_table = [data2output(data) position2table(design)];
+data_table = data2output(data);
 writetable(data_table, sprintf('./Data/%s_dat.csv',design.vpcode));
 save(datFile,'data');
 
