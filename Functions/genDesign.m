@@ -55,9 +55,9 @@ design.goalyPos   = linspace(-design.goalShift, design.goalShift, design.nGoalPo
 design.targetRad        = 1;
 design.targetxPos       = design.goalxPos;
 design.targetyPos_range = [design.goalHeight*0.9, -design.goalHeight*0.9];
-design.targetDur        = 6; % target duration in frames
+design.nTar             = 10; % number of targets shown during flight
 
-design.rangeAccept = 2;
+design.rangeAccept = 10;
 design.rangeCalib  = 1;
 
 % speed variables, in dva/s
@@ -86,7 +86,7 @@ for b = 1
                     % define up_down
                     trial(t).up_down = up_down;
                     % define target positions
-                    trial(t).posSet = drawposset(goal,design.targetyPos_range,60);
+                    trial(t).posSet = drawposset(goal,design.targetyPos_range,design.nTar);
                     % define fixation duration
                     trial(t).fixT    = design.fixDur + rand(1)*design.fixDurJ;
                 end

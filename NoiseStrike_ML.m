@@ -173,7 +173,7 @@ Eyelink('Shutdown');
 % For help see: help sca
 
 ShowCursor;
-Screen('CloseAll')
 expEnd = toc;
 
 sprintf('This experiment lasted %i minutes', round(expEnd/60,1));
+Screen('CloseAll')

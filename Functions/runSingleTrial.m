@@ -174,8 +174,6 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
             Eyelink('Message', 'START_HAND_MOVEMENT');
             t_movStart      = Datapixx('GetTime');
             kb_released     = true;
-%             dataLog.message = [dataLog.message, sprintf('The hand moved at %f\n', t_movStartPixx)];f
-            tar_pos_movStart = posId;
         end
         
         % Check for events
@@ -194,7 +192,6 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
                Eyelink('Message', 'END_HAND_MOVEMENT');
                t_movEnd    = Datapixx('GetTime');                    % we want a time tag when the target was touched for the first time
                goresp          = 1;
-               tar_pos_movEnd = posId;
             end
         end
         if attackerPos(1) >= goalPos(1)
@@ -287,8 +284,8 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     trialData.difficulty      = trial.difficulty;
     trialData.attackerY       = yPosAttacker;
     trialData.posSet          = posSet;
-    trialData.posMovStart     = tar_pos_movStart;
-    trialData.posMovEnd       = tar_pos_movEnd;
+    trialData.touchX          = touch_X;
+    trialData.touchY          = touch_Y;
     
     Eyelink('command', 'clear_screen 0');
     WaitSecs(design.iti);
