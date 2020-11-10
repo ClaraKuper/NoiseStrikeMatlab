@@ -2,3 +2,11 @@ Data/
 Timing/
 Design/
 Figures/
+Analysis/
+Concept/
+.ipynb_checkpoints/
+edf/
+PilotEyeTracking/
+PilotReaches/
+Preprocessing/
+Simulations/

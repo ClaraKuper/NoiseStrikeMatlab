@@ -1,3 +1,4 @@
+=
 % prepare stimuli for presentation
 
 function prepStim
