@@ -12,14 +12,12 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     % set stimuli
     goalypost = trial.goalPos * visual.ppd + visual.yCenter;
     
-    %travelyDist = trial.yDist * visual.ppd;  
-    ySpeed      = 0; %travelyDist/visual.hz;    
+    ySpeed      = 0;
     xSpeed      = visual.xSpeed;
     goalPos     = [visual.goalxPos, goalypost];
-    visual.goalxPos
     
-    yPosAttacker = getytar(trial.goalPos, design.goalHeight, trial.difficulty, trial.in_out, trial.up_down);
-    attackerPos = [visual.attackerPos(1), yPosAttacker*visual.ppd + visual.yCenter]; %visual.attackerPos;
+    yPosAttacker = trial.attackerYPos*visual.ppd;
+    attackerPos = [visual.attackerPos(1), yPosAttacker + visual.yCenter];
     attackerSize = visual.attackerRad;
     attackerColor = visual.attackerColor;
     attackerVisible = visual.attackerVisible;
@@ -31,20 +29,17 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     targetSize = visual.targetRad;
     targetColor = visual.targetColor;
     
-%     fixPos = visual.fixPos;
-%     fixSize = visual.fixRad;
-%     fixColor = visual.fixColor;
-
+    % Draw stuff on Eyelink:
+    Eyelink('command',sprintf('draw_box %d %d %d %d 15', attackerPos(1)-visual.rangeCalib, attackerPos(2)-visual.rangeCalib, attackerPos(1)+visual.rangeCalib, attackerPos(2)+visual.rangeCalib));
+    Eyelink('command',sprintf('draw_box %d %d %d %d 15', goalPos(1)-visual.rangeAccept, goalPos(2)-visual.rangeAccept, goalPos(1)+visual.goalHeight, goalPos(2)+visual.goalHeight));
+    
+    
     % events and responses
     if trial.in_out < 0
         hitgoal = 1;
     else
         hitgoal = 0;
     end
-    
-    % Draw stuff on Eyelink:
-    Eyelink('command',sprintf('draw_box %d %d %d %d 15', attackerPos(1)-visual.rangeAccept, attackerPos(2)-visual.rangeAccept, attackerPos(1)+visual.rangeAccept, attackerPos(2)+visual.rangeAccept));
-    Eyelink('command',sprintf('draw_box %d %d %d %d 15', goalPos(1)-visual.rangeAccept, goalPos(2)-visual.rangeAccept, goalPos(1)+visual.goalHeight, goalPos(2)+visual.goalHeight));
     
     
     % Initialize timing and monitoring parameters
@@ -54,9 +49,6 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     goresp         = 0;
     fixation_break = false;
     response       = 'NONE';
-    
-    tar_pos_movStart = 0;
-    tar_pos_movEnd   = 0;
 
     % timing
     t_draw     = NaN;  % the stimulus was on screen
@@ -68,6 +60,10 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     t_cross    = NaN;  % the attacker crossed the x position of the goal
     t_movEnd   = NaN;  % the movements ended
     t_end      = NaN;  % the trial is over
+    touch_X    = NaN;  % the x touch coordinate
+    touch_Y    = NaN;  % the y touch coordinate
+    resp_X     = NaN;  % response touch x
+    resp_Y     = NaN;  % response touch Y
     
     % screen flips
     flip_count = 0;
@@ -75,12 +71,20 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     % per default, the trial is a success :)
     trial_succ = 1;
     
+    
+    [~, ~ , keyCode] = KbCheck;
+    % wait while the keyboard is pressed
+    
+    while keyCode(design.response)
+        [~, ~ , keyCode] = KbCheck;
+    end
+    
+    
     % Run the trial. Display the goal and a moving ball
 	Eyelink('Message', sprintf('TRIAL_START, %i', t));
     Eyelink('Message', 'TRIAL_SYNCTIME');
 	
     Screen('DrawDots', visual.window, attackerPos, attackerSize, attackerColor, [], 2); % attacker
-%    Screen('DrawDots', visual.window, targetPos, targetSize, targetColor, [], 2); % target
     
     Screen('Flip', visual.window);
     Datapixx('RegWrRd');
@@ -118,18 +122,15 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
                 fixation_break = true;
                 break
             end
-%        else
-%            sprintf('Sth is wrong with the eyelink');
-%            Eyelink('Message', sprintf('TRIAL_STOPPED %i',t));
-%            calibrate = true;
-%            break
+
         end
         
         Screen('DrawDots', visual.window, attackerPos, attackerSize, attackerColor, [], 2); % attacker
-        %Screen('DrawDots', visual.window, targetPos, targetSize, targetColor, [], 2); % target
         Screen('Flip', visual.window);
         flip_count = flip_count +1;
+    
     end
+    
     Eyelink('Message', 'BOTH_FIX');
     
     WaitSecs(design.fixDur);
@@ -137,6 +138,7 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     % most crucial timing in this loop
     while on_fix_hand && on_fix_eye && isnan(t_cross)
         Datapixx('RegWrRd');
+        
         if isnan(t_go) % set time stamp the first time this is executed
             Eyelink('Message', 'ATTACKER_MOVED');
             t_go = Datapixx('GetTime');
@@ -144,9 +146,10 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
         
         % this block updates the attacker position. 
         attackerPos = attackerPos+[xSpeed, ySpeed];
+        
         % on every xth flip as definined by design, the target position is
         % updated
-        if mod(flip_count, design.targetDur) == 0
+        if mod(flip_count, visual.targetDur) == 0
             posId       = posId+1;
             targetPos = [visual.targetxPos, posSet(posId)];
             Eyelink('Message', 'NEW_TARGET, x: %i, y: %i', round(targetPos(1)), round(targetPos(2)));
@@ -181,7 +184,6 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
             [touches, ~] = Datapixx('ReadTouchpixxLog');
             touch_X = visual.mx*touches(1,status.newLogFrames)+visual.bx;   % Convert touch to screen coordinates
             touch_Y = visual.my*touches(2,status.newLogFrames)+visual.by;   % We use the one-before-last available touch information
-            
             % check if movement started (touch not within box around window)
             Datapixx('RegWrRd');
             
@@ -191,6 +193,8 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
                     goalPos(2) - visual.rangeAccept < touch_Y && touch_Y < goalPos(2) + visual.rangeAccept
                Eyelink('Message', 'END_HAND_MOVEMENT');
                t_movEnd    = Datapixx('GetTime');                    % we want a time tag when the target was touched for the first time
+               resp_X      = touch_X;
+               resp_Y      = touch_Y;
                goresp          = 1;
             end
         end
@@ -200,7 +204,7 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
             t_cross   = Datapixx('GetTime');
             if isnan(t_movEnd)
                 % set a time for the movement end
-                t_movEnd = t_cross;
+                % t_movEnd = t_cross;
                 goresp  = 0;
             end
         end
@@ -230,20 +234,20 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
         trial_succ = 0;
         EyelinkDoTrackerSetup(el);
     elseif goresp && hitgoal 
-        DrawFormattedText(visual.window, 'Well done!', 'center', 'center', visual.textColor);
+        %DrawFormattedText(visual.window, 'Well done!', 'center', 'center', visual.textColor);
         response = 'HIT';
     elseif goresp && ~hitgoal 
-        DrawFormattedText(visual.window, 'False Alarm', 'center', 'center', visual.textColor);
+        %DrawFormattedText(visual.window, 'False Alarm', 'center', 'center', visual.textColor);
         response = 'FALSE ALARM';
     elseif ~goresp 
         if kb_released
             DrawFormattedText(visual.window, 'Too slow', 'center', 'center', visual.textColor);
             trial_succ = 0;
         elseif hitgoal 
-            DrawFormattedText(visual.window, 'Missed!', 'center', 'center', visual.textColor);
+            %DrawFormattedText(visual.window, 'Missed!', 'center', 'center', visual.textColor);
             response = 'MISS';
         elseif ~hitgoal 
-            DrawFormattedText(visual.window, 'Correct!', 'center', 'center', visual.textColor);
+            %DrawFormattedText(visual.window, 'Correct!', 'center', 'center', visual.textColor);
             response = 'CORRECT REJECTION';
         end
     else
@@ -279,13 +283,13 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     
     %trialData.yDist           = abs(travelyDist) - abs(goalypost);
     trialData.goalY           = goalypost;
-    trialData.in_out          = trial.in_out;
-    trialData.up_down         = trial.up_down;
-    trialData.difficulty      = trial.difficulty;
     trialData.attackerY       = yPosAttacker;
-    trialData.posSet          = posSet;
-    trialData.touchX          = touch_X;
-    trialData.touchY          = touch_Y;
+    %trialData.in_out          = trial.in_out;
+    %trialData.up_down         = trial.up_down;
+    %trialData.difficulty      = trial.difficulty;
+    %trialData.posSet          = posSet;
+    trialData.touchX          = resp_X;
+    trialData.touchY          = resp_Y;
     
     Eyelink('command', 'clear_screen 0');
     WaitSecs(design.iti);
