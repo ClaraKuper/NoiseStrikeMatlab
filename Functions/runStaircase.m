@@ -1,7 +1,5 @@
-function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
-
-    ListenChar(0);
-
+function staircaseData  = runStaircase(trial, design, visual, settings, t, el)
+     
     Datapixx('SetTouchpixxLog');                                    % Configure TOUCHPixx logging with default buffer
     Datapixx('EnableTouchpixxLogContinuousMode');                   % Continuous logging during a touch. This also gives you long output from buffer reads
     Datapixx('StartTouchpixxLog');
@@ -9,22 +7,23 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     t_initPixx = Datapixx('GetTime');  % Save when the DataPixx Log was initiated
     
     Eyelink('StartRecording');
-
+    
     % prepare the trial
     % set stimuli
+    distortion = trial.distortion;
     goalypost = trial.goalPos * visual.ppd + visual.yCenter;
     
     ySpeed      = 0;
     xSpeed      = visual.xSpeed;
     goalPos     = [visual.goalxPos, goalypost];
     
-    yPosAttacker = trial.attackerYPos*visual.ppd;
+    yPosAttacker = distortion * trial.attackerYPos*visual.ppd;
     attackerPos = [visual.attackerPos(1), yPosAttacker + visual.yCenter];
     attackerSize = visual.attackerRad;
     attackerColor = visual.attackerColor;
     attackerVisible = visual.attackerVisible;
 
-    posSet = trial.posSet * visual.ppd + visual.yCenter;
+    posSet = distortion * trial.posSet * visual.ppd + visual.yCenter;
     posId = 1;
 
     targetPos = [visual.targetxPos, posSet(posId)];
@@ -223,6 +222,8 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     t_end           = Datapixx('GetTime');
 %     dataLog.message = [dataLog.message, sprintf('Trial End at %f \n', t_end)];
     Datapixx('StopTouchpixxLog');  
+	
+   
 
     rea_time = t_movStart - t_go;
     mov_time = t_movEnd - t_movStart; 
@@ -234,21 +235,25 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
         trial_succ = 0;
         EyelinkDoTrackerSetup(el);
     elseif goresp && hitgoal 
-        %DrawFormattedText(visual.window, 'Well done!', 'center', 'center', visual.textColor);
+        DrawFormattedText(visual.window, 'Well done!', 'center', 'center', visual.textColor);
         response = 'HIT';
+        %distortion = distortion - 0.2;
     elseif goresp && ~hitgoal 
-        %DrawFormattedText(visual.window, 'False Alarm', 'center', 'center', visual.textColor);
+        DrawFormattedText(visual.window, 'False Alarm', 'center', 'center', visual.textColor);
         response = 'FALSE ALARM';
+        %distortion = distortion + 0.2;
     elseif ~goresp 
         if kb_released
             DrawFormattedText(visual.window, 'Too slow', 'center', 'center', visual.textColor);
             trial_succ = 0;
         elseif hitgoal 
-            %DrawFormattedText(visual.window, 'Missed!', 'center', 'center', visual.textColor);
+            DrawFormattedText(visual.window, 'Missed!', 'center', 'center', visual.textColor);
             response = 'MISS';
+            %distortion = distortion + 0.2;
         elseif ~hitgoal 
-            %DrawFormattedText(visual.window, 'Correct!', 'center', 'center', visual.textColor);
+            DrawFormattedText(visual.window, 'Correct!', 'center', 'center', visual.textColor);
             response = 'CORRECT REJECTION';
+            %distortion = distortion - 0.2;
         end
     else
         DrawFormattedText(visual.window, 'Unknown Error', 'center', 'center', visual.textColor);
@@ -263,33 +268,34 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     Eyelink('Message', sprintf('TRIAL_END, %i', t));
     Eyelink('StopRecording');
     
-    trialData.success         = trial_succ;                                 % 1 = success 
+    staircaseData.distortion      = distortion;
+    staircaseData.success         = trial_succ;                                 % 1 = success 
                                                                             % 0 = unknown error
-    trialData.rea_time        = rea_time;
-    trialData.mov_time        = mov_time;
-    trialData.initPixx        = t_initPixx;
-    trialData.t_draw          = t_draw;
-    trialData.t_kbdown        = t_kbdown;
-    trialData.t_eyesfixed     = t_eyesfixed;
-    trialData.t_go            = t_go;
-    trialData.t_disap         = t_disap;
-    trialData.t_movStart      = t_movStart;
-    trialData.t_movEnd        = t_movEnd;
-    trialData.t_cross         = t_cross;
-    trialData.t_end           = t_end;
+    staircaseData.rea_time        = rea_time;
+    staircaseData.mov_time        = mov_time;
+    staircaseData.initPixx        = t_initPixx;
+    staircaseData.t_draw          = t_draw;
+    staircaseData.t_kbdown        = t_kbdown;
+    staircaseData.t_eyesfixed     = t_eyesfixed;
+    staircaseData.t_go            = t_go;
+    staircaseData.t_disap         = t_disap;
+    staircaseData.t_movStart      = t_movStart;
+    staircaseData.t_movEnd        = t_movEnd;
+    staircaseData.t_cross         = t_cross;
+    staircaseData.t_end           = t_end;
     
-    trialData.goResp          = goresp;
-    trialData.hitGoal         = hitgoal;
+    staircaseData.goResp          = goresp;
+    staircaseData.hitGoal         = hitgoal;
     
     %trialData.yDist           = abs(travelyDist) - abs(goalypost);
-    trialData.goalY           = goalypost;
-    trialData.attackerY       = yPosAttacker;
+    staircaseData.goalY           = goalypost;
+    staircaseData.attackerY       = yPosAttacker;
     %trialData.in_out          = trial.in_out;
     %trialData.up_down         = trial.up_down;
     %trialData.difficulty      = trial.difficulty;
     %trialData.posSet          = posSet;
-    trialData.touchX          = resp_X;
-    trialData.touchY          = resp_Y;
+    staircaseData.touchX          = resp_X;
+    staircaseData.touchY          = resp_Y;
     
     Eyelink('command', 'clear_screen 0');
     WaitSecs(design.iti);

@@ -27,8 +27,6 @@ design.nGoalPos   = 5;
 % Fixation
 design.fixWidth = 1;
 design.fixHeight = 1;
-%design.fixRad = 0.2;
-%design.fixPos = [0,0];
 
 % Attacker
 design.attackerRad = 1;
@@ -36,6 +34,7 @@ design.attackerxPos= -10;
 design.attackeryPos= 0;
 design.travelDur   = 1.0; % time in sec
 design.difficulty  = 1; % the postion of the attacker
+design.difficultyJ = design.difficulty * 0.1; % change the position of the attacker a little bit in each trial
 design.up_down     = [1, -1]; % 1 is up, -1 is down
 design.in_out      = [1, -1]; % 1 is out, -1 is in (follows from the maths in function getyTar)
 design.xSpeed      = 0;  % initialize only, change later
@@ -52,7 +51,7 @@ design.exampleGoal = [10, design.goalHeight, 10, -design.goalHeight];
 % Target
 design.targetRad        = 1;
 design.targetxPos       = design.goalxPos;
-design.targetyPos_range = [design.goalHeight*0.95, -design.goalHeight*0.95];
+design.targetyPos_range = [design.goalHeight, -design.goalHeight];
 design.nTar             = 10; % number of targets to be shown during flight 
 
 design.rangeAccept = 8;
@@ -67,7 +66,8 @@ design.travelFrames = design.travelxDist * scr.refRate;
 design.nBlocks = 5;
 design.nTrials = 5; 
 
-    
+design.distortion = linspace(0.3, 1.2, design.nBlocks);
+  
 % build experimental blocks
 for b = 1:design.nBlocks
     t = 0;
@@ -80,17 +80,18 @@ for b = 1:design.nBlocks
                         % define goal position
                         trial(t).goalPos = goal;
                         % define the y position of the attacker
-                        trial(t).difficulty = difficulty; % will be changed later, this is just here for testing reasons
+                        trial(t).difficulty = difficulty + design.difficultyJ + (-design.difficultyJ-design.difficultyJ)*rand(); % will be changed later, this is just here for testing reasons
                         % define in_out
                         trial(t).in_out = in_out;
                         % define up_down
                         trial(t).up_down = up_down;
                         % define target positions
-                        trial(t).posSet = drawposset(goal,design.targetyPos_range,design.nTar+1);
+                        trial(t).posSet = drawposset(goal,design.targetyPos_range,design.nTar+2);
                         % define fixation duration
                         trial(t).fixT    = design.fixDur + rand(1)*design.fixDurJ;
                         % y position of the attacker
                         trial(t).attackerYPos = getytar(goal, design.goalHeight, difficulty, in_out, up_down);
+                        trial(t).distortion = design.distortion(b);
                     end
                 end
             end
