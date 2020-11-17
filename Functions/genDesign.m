@@ -54,7 +54,7 @@ design.goalyPos   = linspace(-design.goalShift, design.goalShift, design.nGoalPo
 
 design.targetRad        = 1;
 design.targetxPos       = design.goalxPos;
-design.targetyPos_range = [design.goalHeight*0.9, -design.goalHeight*0.9];
+design.targetyPos_range = [design.goalHeight, -design.goalHeight];
 design.targetDur        = 6; % target duration in frames
 
 design.rangeAccept = 2;
