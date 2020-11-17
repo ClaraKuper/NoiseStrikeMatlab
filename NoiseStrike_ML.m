@@ -100,25 +100,14 @@ try
     % run the first block to adjust difficulty
     b_i = 1;
     b = 1;
-    
-    data.block(b) = runBlock(b, b_i, el);
-    
-    % compute at what difficulty the participant made 75% correct responses
-    % difficulty = get_difficulty()
-    
-    b_i = b_i+1;
   
     %% run normal blocks
     
     for b = design.blockOrder
         
-        %% evaluate perfomance and return difficulty level for next block
-        
-        design.b(b).difficulty = 0.5; % set here for test reasons will be defined differently later
-        
-        % off we go 
         data.block(b) = runBlock(b, b_i, el);
         b_i = b_i+1;
+        
     end   
     
     Eyelink('Message', 'EXPERIMENT ENDED');
@@ -156,7 +145,8 @@ try
     if 2==exist(settings.edffilename, 'file')
         fprintf('Data file ''%s'' can be found in ''%s''\n', settings.edffilename, pwd );
         [sucMov,mesMov,messMov] = movefile(settings.edffilename,'edf/','f');
-        if sucMov
+
+        if ~sucMov
             fprintf('File successfully moved into edf folder.\n');
         end
     end
@@ -165,17 +155,13 @@ catch rdf
     rdf;
 end
 
-WaitSecs(3);
+WaitSecs(1);
 ListenChar(1);
 Eyelink('Shutdown');
 
-% Clear the screen. "sca" is short hand for "Screen CloseAll". This clears
-% all features related to PTB. Note: we leave the variables in the
-% workspace so you can have a look at them if you want.
-% For help see: help sca
-
 ShowCursor;
-Screen('CloseAll')
 expEnd = toc;
 
-sprintf('This experiment lasted %i minutes', round(expEnd/60,1));
+fprintf('This experiment lasted %i minutes', round(expEnd/60,0));
+sca;
+Screen('CloseAll');
