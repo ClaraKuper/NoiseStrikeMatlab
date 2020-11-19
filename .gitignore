@@ -10,3 +10,17 @@ PilotEyeTracking/
 PilotReaches/
 Preprocessing/
 Simulations/
+0_Concept/
+0_Simulations/
+0_TouchCalib/
+TouchCalib/
+0-1_raw/
+1_Data/
+1_Design/
+1_edf/
+1-2_Preprocessing/
+2_msg/
+2_position/
+2_sac/
+2-3_Analysis/
+3_Figures/
