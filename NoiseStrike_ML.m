@@ -85,7 +85,6 @@ try
     
     disp([num2str(GetSecs) ' Eyelink initialized.']);
     
-    %% run the setup block
     % calibrate
     calibresult = EyelinkDoTrackerSetup(el);
     
@@ -105,7 +104,7 @@ try
     
     for b = design.blockOrder
         
-        data.block(b) = runBlock(b, b_i, el);
+        data.block(b_i) = runBlock(b, b_i, el);
         b_i = b_i+1;
         
     end   

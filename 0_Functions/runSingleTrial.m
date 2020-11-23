@@ -227,8 +227,8 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
             x = evt.gx(settings.eye_used+1);
             y = evt.gy(settings.eye_used+1);
             
-        elseif isnan(t_eyesStart) && startPos(1) - visual.rangeAccept < x && x < startPos(1) + visual.rangeAccept &&...
-                startPos(2) - visual.rangeAccept < y && y < startPos(2) + visual.rangeAccept
+        elseif isnan(t_eyesStart) && ~ (startPos(1) - visual.rangeAccept < x && x < startPos(1) + visual.rangeAccept &&...
+                startPos(2) - visual.rangeAccept < y && y < startPos(2) + visual.rangeAccept)
            t_eyesStart = Datapixx('GetTime');
            Eyelink('Message', 'EYES_START');
             

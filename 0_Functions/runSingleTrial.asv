@@ -61,11 +61,12 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     t_bothfixed= NaN;  % the time when both eyes and hands where in starting position
     t_go       = NaN;  % the attacker started moving
     t_disap    = NaN;  % the attacker disappeared
-    t_eyesStart= NaN; % the eyes leave the fixation box
+    t_eyesStart= NaN;  % the eyes leave the fixation box
     t_movStart = NaN;  % the movement started
     t_eyesEnd  = NaN;  % the eye land nearby the target
     t_cross    = NaN;  % the attacker crossed the x position of the goal
     t_movEnd   = NaN;  % the movements ended
+    t_feedback = NaN;  % feedback was on screen
     t_end      = NaN;  % the trial is over
     resp_X     = NaN;  % response touch x
     resp_Y     = NaN;  % response touch Y
@@ -225,13 +226,14 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
             Eyelink('Message', 'FIXATION_BREAK');
             x = evt.gx(settings.eye_used+1);
             y = evt.gy(settings.eye_used+1);
-        elseif isnan(t_eyesstart) && startPos(1) - visual.rangeAccept < x && x < startPos(1) + visual.rangeAccept &&...
-                startPos(2) - visual.rangeAccept < y && y < startPos(2) + visual.rangeAccept
-           t_eyesstart = Datapixx('GetTime');
+            
+        elseif isnan(t_eyesStart) && ~ (startPos(1) - visual.rangeAccept < x && x < startPos(1) + visual.rangeAccept &&...
+                startPos(2) - visual.rangeAccept < y && y < startPos(2) + visual.rangeAccept)
+           t_eyesStart = Datapixx('GetTime');
            Eyelink('Message', 'EYES_START');
             
-        elseif isnan(t_eyesend) && goalPos(1) - visual.rangeAccept < x && x < goalPos(1) + visual.rangeAccept
-           t_eyesend = Datatpixx('GetTime');
+        elseif isnan(t_eyesEnd) && goalPos(1) - visual.rangeAccept < x && x < goalPos(1) + visual.rangeAccept
+           t_eyesEnd = Datatpixx('GetTime');
            Eyelink('Message', 'EYES_END');
         end
         
@@ -272,13 +274,13 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
         trial_succ = 0;
     end
     
+    Screen('Flip', visual.window);
+    t_feedback = Datapixx('GetTime');
     Eyelink('Message', 'FEEDBACK_PRESENTED');
     
-    Screen('Flip', visual.window);
-    
     Eyelink('Message', 'RESPONSE_TRIAL %i, %s', t, response);
-    Eyelink('Message', 'TRIAL_END, %i', t);
     Eyelink('Message', 'SUCCESS %i', trial_succ);
+    Eyelink('Message', 'TRIAL_END, %i', t);
     Eyelink('StopRecording');
     
     trialData.success         = trial_succ;                                 % 1 = success 
@@ -286,26 +288,26 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     trialData.rea_time        = rea_time;
     trialData.mov_time        = mov_time;
     trialData.initPixx        = t_initPixx;
+    trialData.t_start         = t_start;
     trialData.t_draw          = t_draw;
     trialData.t_kbdown        = t_kbdown;
     trialData.t_eyesfixed     = t_eyesfixed;
+    trialData.t_bothfixed     = t_bothfixed;
     trialData.t_go            = t_go;
     trialData.t_disap         = t_disap;
+    trialData.t_eyesStart     = t_eyesStart;
     trialData.t_movStart      = t_movStart;
+    trialData.t_eyesEnd       = t_eyesEnd;
     trialData.t_movEnd        = t_movEnd;
     trialData.t_cross         = t_cross;
+    trialData.t_feedback      = t_feedback;
     trialData.t_end           = t_end;
     
     trialData.goResp          = goresp;
     trialData.hitGoal         = hitgoal;
-    
-    %trialData.yDist           = abs(travelyDist) - abs(goalypost);
+   
     trialData.goalY           = goalypost;
     trialData.attackerY       = yPosAttacker;
-    %trialData.in_out          = trial.in_out;
-    %trialData.up_down         = trial.up_down;
-    %trialData.difficulty      = trial.difficulty;
-    %trialData.posSet          = posSet;
     trialData.touchX          = resp_X;
     trialData.touchY          = resp_Y;
     
