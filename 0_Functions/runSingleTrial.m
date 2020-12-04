@@ -279,9 +279,7 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     Eyelink('Message', 'FEEDBACK_PRESENTED');
     
     Eyelink('Message', 'RESPONSE_TRIAL %i, %s', t, response);
-    Eyelink('Message', 'SUCCESS %i', trial_succ);
-    Eyelink('Message', 'TRIAL_END, %i', t);
-    Eyelink('StopRecording');
+    Eyelink('Message', 'SUCCESS, %i', trial_succ);
     
     trialData.success         = trial_succ;                                 % 1 = success 
                                                                             % 0 = unknown error
@@ -312,5 +310,8 @@ function trialData  = runSingleTrial(trial, design, visual, settings, t, el)
     trialData.touchY          = resp_Y;
     
     Eyelink('command', 'clear_screen 0');
+    Eyelink('Message', 'TRIAL_END, %i', t);
+    Eyelink('StopRecording');
+    
     WaitSecs(design.iti);
 end
