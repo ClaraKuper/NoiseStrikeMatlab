@@ -1,0 +1,494 @@
+---
+title: "Noise Strike Lmer models"
+output: html_notebook
+---
+
+This notebook is the R-based version of model fitting.
+I will use the R interface for the following reasons:
+
+1. support in my scientific community (incl. people in my lab) is better for statistical analysis in R than in pyhton.
+2. the availability of statistical packages is better in R compared to python, and more of these packages are documented in scientific journal publications
+3. comparing the outcome of the models fitted here to the models ultimately fitted in python is a sanity check for their robustness.
+
+
+The specific aims of this notebook are:
+
+1. load the datasets
+2. standardize the independent variables, and compare the resulting distribution to the non-standardized form.
+3. fit linear mixed effects models using the lme4 package
+4. check the goodness of fit with rePCA
+5. reduce the model till model assumptions are met
+
+The above procedure is repeated for the model for reaction times and for the model for go/nogo responses.
+
+The final model will then me re-executed in python, with pymer4 and statsmodels.
+
+```{r load}
+# step 0: import all necessary libraries
+library(ggplot2)
+library(lme4)
+
+# step 1: load the data
+df <- read.csv('../2_cleaned/short_df_6.csv', header = TRUE)
+df_norm <- df
+
+
+# step 2: normalize independent variables
+# df_norm$time_norm <- (df_norm$time-mean(df_norm$time))/sd(df_norm$time)
+# normalize the positions
+df_norm$posSet_1 <- (df_norm$posSet_1-mean(df_norm$posSet_1))/sd(df_norm$posSet_1)
+df_norm$posSet_2 <- (df_norm$posSet_2-mean(df_norm$posSet_2))/sd(df_norm$posSet_2)
+df_norm$posSet_3 <- (df_norm$posSet_3-mean(df_norm$posSet_3))/sd(df_norm$posSet_3)
+df_norm$posSet_4 <- (df_norm$posSet_4-mean(df_norm$posSet_4))/sd(df_norm$posSet_4)
+df_norm$posSet_5 <- (df_norm$posSet_5-mean(df_norm$posSet_5))/sd(df_norm$posSet_5)
+df_norm$posSet_6 <- (df_norm$posSet_6-mean(df_norm$posSet_6))/sd(df_norm$posSet_6)
+
+# normalize the probabilities
+df_norm$pi_pos01 <- (df_norm$pi_pos01-mean(df_norm$pi_pos01))/sd(df_norm$pi_pos01)
+df_norm$pi_pos02 <- (df_norm$pi_pos02-mean(df_norm$pi_pos02))/sd(df_norm$pi_pos01)
+df_norm$pi_pos03 <- (df_norm$pi_pos03-mean(df_norm$pi_pos03))/sd(df_norm$pi_pos01)
+df_norm$pi_pos04 <- (df_norm$pi_pos04-mean(df_norm$pi_pos04))/sd(df_norm$pi_pos01)
+df_norm$pi_pos05 <- (df_norm$pi_pos05-mean(df_norm$pi_pos05))/sd(df_norm$pi_pos01)
+df_norm$pi_pos06 <- (df_norm$pi_pos06-mean(df_norm$pi_pos06))/sd(df_norm$pi_pos01)
+
+
+# step 3: compare the quantiles of normalized vs non-normalized ivs
+par(mfrow=c(2,6))
+qqplot(df_norm$posSet_1,df$posSet_1)
+qqplot(df_norm$posSet_2,df$posSet_2)
+qqplot(df_norm$posSet_3,df$posSet_3)
+qqplot(df_norm$posSet_4,df$posSet_4)
+qqplot(df_norm$posSet_5,df$posSet_5)
+qqplot(df_norm$posSet_6,df$posSet_6)
+
+qqplot(df_norm$pi_pos01,df$pi_pos01)
+qqplot(df_norm$pi_pos02,df$pi_pos02)
+qqplot(df_norm$pi_pos03,df$pi_pos03)
+qqplot(df_norm$pi_pos04,df$pi_pos04)
+qqplot(df_norm$pi_pos05,df$pi_pos05)
+qqplot(df_norm$pi_pos06,df$pi_pos06)
+
+
+```
+Conclusion: we can normalize both values here, the distribution won't change.
+
+
+## Part 1 Fitting REACTION TIMES
+
+```{r rt max model}
+# check if the model was already fitted
+filename_maxrt <- '../2-3_Fitted/rt_max_lmer.R'
+
+if (file.exists(filename_maxrt)){
+  
+  #rtm indicates a ReactionTime Model
+  rtm0 <- readRDS(filename_maxrt)
+  
+}else {
+  
+  # First, we fit the maximum model for reaction time
+rtm0 <- lmer('rea_time ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + posSet_1 + posSet_2 + posSet_3 + posSet_4 + posSet_5 + posSet_6 + pi_pos01:posSet_1 + pi_pos02:posSet_2 + pi_pos03:posSet_3 + pi_pos04:posSet_4 + pi_pos05:posSet_5 + pi_pos06:posSet_6 + (1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + posSet_1 + posSet_2 + posSet_3 + posSet_4 + posSet_5 + posSet_6|subject)', data = df_norm, REML = FALSE)
+
+# and we save the model
+saveRDS(rtm0 , file = filename_maxrt)
+  
+}
+
+summary(rtm0)
+
+```
+
+We already see that this model produces a Singularity warning. It also ran for a long time, which also indicates problem with the fitting. 
+Let's see if we can reduce the parameters in the random effects.
+
+```{r theta}
+# get the estimated parameters for the random effects 
+
+zapsmall(getME(rtm0,"theta"))
+
+```
+Interpretation: the parmeter values here are effectively zero for most of the positions.
+
+
+Next: with rePCA we can test specifically, how many of the random effect components we need to account for 100% of the variance
+```{r}
+# Probe the fitted model with rePCA
+
+
+prc <- rePCA(rtm0)
+class(prc)
+length(prc)
+names(prc)
+class(prc$subject)
+prc$subject
+summary(prc$subject)
+
+```
+Important for the interpretation it the cumulative proportion 3 components are enough to account for 100% of the variance. 
+But which components shall we use? 
+
+The components above refer to PCA components. They are not 1:1 translatable to random effect components. 
+
+But we can check the random effect components from the model itself:
+the position terms account for less variance than the probability and the intercept. So we'll remove all position terms from the random effects.
+
+
+```{r rtm1}
+
+rtm1 <- lmer('rea_time ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + posSet_1 + posSet_2 + posSet_3 + posSet_4 + posSet_5 + posSet_6 + pi_pos01:posSet_1 + pi_pos02:posSet_2 + pi_pos03:posSet_3 + pi_pos04:posSet_4 + pi_pos05:posSet_5 + pi_pos06:posSet_6 + (1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06|subject)', data = df_norm, REML = FALSE)
+
+summary(rtm1)
+
+```
+
+The model is still singular and did not converge. 
+Is the covariance structure still degenerated?
+
+```{r}
+# print only the summary of the reaction time covariance matrix
+summary(rePCA(rtm1$subject))
+
+```
+Yes, it seems like we can reduce the model even further and keep only random effects for the intercept and the probability of time point 4.
+
+```{r}
+
+rtm2 <- lmer('rea_time ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + posSet_1 + posSet_2 + posSet_3 + posSet_4 + posSet_5 + posSet_6 + pi_pos01:posSet_1 + pi_pos02:posSet_2 + pi_pos03:posSet_3 + pi_pos04:posSet_4 + pi_pos05:posSet_5 + pi_pos06:posSet_6 + (1 + pi_pos04|subject)', data = df_norm, REML = FALSE)
+
+summary(rtm2)
+
+```
+
+```{r}
+# print only the summary of the reaction time covariance matrix
+summary(rePCA(rtm2$subject))
+
+```
+
+The intercept explain enough variance so that we can get rid of the last term, too.
+
+```{r}
+
+rtm3 <- lmer('rea_time ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + posSet_1 + posSet_2 + posSet_3 + posSet_4 + posSet_5 + posSet_6 + + pi_pos01:posSet_1 + pi_pos02:posSet_2 + pi_pos03:posSet_3 + pi_pos04:posSet_4 + pi_pos05:posSet_5 + pi_pos06:posSet_6 +(1|subject)', data = df_norm, REML = FALSE)
+
+summary(rtm3)
+
+```
+
+This model does not throw a singularity warning. Next, we will reduce the parameters in the fixed effects structure. 
+
+We can see in the model summary above, that the interaction terms account for very little variance. 
+They are also the most complex fixed effect - therefore, we will remove them.
+
+```{r}
+
+rtm4 <- lmer('rea_time ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + posSet_1 + posSet_2 + posSet_3 + posSet_4 + posSet_5 + posSet_6 + (1|subject)', data = df_norm, REML = FALSE)
+
+summary(rtm4)
+
+```
+
+The position also accounts for only a small proportion of the variance, so we will get rid of the position, too.
+
+```{r}
+
+rtm5 <- lmer('rea_time ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + (1|subject)', data = df_norm, REML = FALSE)
+
+summary(rtm5)
+
+```
+
+Finally, we remove the probability effects where the Standard Error is larger than the estimate (pi04, pi05, pi06)
+
+
+```{r}
+
+rtm6 <- lmer('rea_time ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + (1|subject)', data = df_norm, REML = FALSE)
+
+summary(rtm6)
+
+```
+Next, we want to compare all models by their AIC
+
+```{r}
+
+list(summary(rtm0)$AIC[1], summary(rtm1)$AIC[1], summary(rtm2)$AIC[1], summary(rtm3)$AIC[1], summary(rtm4)$AIC[1], summary(rtm5)$AIC[1], summary(rtm6)$AIC[1])
+
+```
+
+The AIC is the lowest for the first and the second model. However - these models had degenerated random effects and did not converge in the training, which is why we don't consider them in this approach. The lowest AIC for the converged models has the last model we fitted (rtm6).
+
+We want to exclude that removing further factors can still improve the model, so we fit one more model, removing the parameter that explains the least variance from model rtm6
+
+```{r}
+
+rtm7 <- lmer('rea_time ~ 1 + pi_pos01 + pi_pos02 + (1|subject)', data = df_norm, REML = FALSE)
+
+summary(rtm7)
+
+```
+The AIC here is higher than in the model before (-10412.2, compared to - 10473.87 before). So we can conclude, that model rtm6 is the best fitting model to our reaction time data. We will save it as an R object.
+
+```{r}
+
+
+# check if the model was already fitted
+filename_bestfitrt <- '../2-3_Fitted/rt_bestfit_lmer.R'
+
+if (file.exists(filename_bestfitrt)){
+  
+  #rtm indicates a ReactionTime Model
+  print('the file already exists. it was not overwritten.')
+  
+}else {
+
+# we save the model
+saveRDS(rtm6 , file = filename_bestfitrt)
+  
+}
+
+# and we print the summary a last time
+summary(rtm6)
+
+```
+
+```{r}
+qqnorm(residuals(rtm6))
+```
+
+
+
+Nice. Out of interest: Do the model predictions change when the data is not normalized?
+
+For comparison the values for the model with normalized data:
+
+Random effects:
+ Groups   Name        Variance Std.Dev.
+ subject  (Intercept) 0.003225 0.05679 
+ Residual             0.005361 0.07322 
+Number of obs: 4397, groups:  subject, 4
+
+Fixed effects:
+             Estimate Std. Error t value
+(Intercept)  0.554313   0.028443  19.489
+pi_pos01    -0.028741   0.001767 -16.269
+pi_pos02    -0.048941   0.007733  -6.329
+pi_pos03     0.051166   0.006391   8.006
+
+Correlation of Fixed Effects:
+         (Intr) p_ps01 p_ps02
+pi_pos01 -0.008              
+pi_pos02 -0.009 -0.412       
+pi_pos03 -0.013  0.031 -0.752
+
+```{r}
+
+rtm6_nn <- lmer('rea_time ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + (1|subject)', data = df, REML = FALSE)
+
+summary(rtm6_nn)
+
+```
+
+The only change we observe is in the intercept, and it's a very small change that does not change the model interpretation.
+
+
+## PART 2 fitting RESPONSES
+
+For the response data we need a model that supports binary outcome. 
+In the R framework, that's glmer.
+
+Again, we start with fitting a full model that we will reduce iteratively.
+
+```{r}
+# this full model will again run for a long time, so we want to save it.
+
+filename_maxresp <- '../2-3_Fitted/resp_max_lmer.R'
+
+if (file.exists(filename_maxresp)){
+  
+  #respm indicates a RESPonses Model
+  respm0 <- readRDS(filename_maxresp)
+  
+}else {
+  
+# First, we fit the maximum model for reaction time
+respm0 <- glmer('goResp ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + posSet_1 + posSet_2 + posSet_3 + posSet_4 + posSet_5 + posSet_6 + pi_pos01:posSet_1 + pi_pos02:posSet_2 + pi_pos03:posSet_3 + pi_pos04:posSet_4 + pi_pos05:posSet_5 + pi_pos06:posSet_6 + (1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + posSet_1 + posSet_2 + posSet_3 + posSet_4 + posSet_5 + posSet_6|subject)', binomial, data = df_norm)
+
+
+# and we save the model
+saveRDS(respm0 , file = filename_maxresp)
+  
+}
+
+summary(respm0)
+
+```
+
+We procede in the same way as for the reaction times above. 
+First, we reduce the random effects structure according to the results from a PCA.
+
+```{r}
+# probe the fitted model with rePCA
+
+respPCA <- rePCA(respm0)
+class(respPCA)
+length(respPCA)
+names(respPCA)
+class(respPCA$subject)
+respPCA$subject
+summary(respPCA$subject)
+
+```
+
+The results suggest that we can shorten the random effects structure. Since in the random effects, the least variance is explained by position terms, we take them out.
+
+```{r}
+
+respm1 <- glmer('goResp ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + posSet_1 + posSet_2 + posSet_3 + posSet_4 + posSet_5 + posSet_6 + pi_pos01:posSet_1 + pi_pos02:posSet_2 + pi_pos03:posSet_3 + pi_pos04:posSet_4 + pi_pos05:posSet_5 + pi_pos06:posSet_6 + (1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos05 + pi_pos06|subject)', binomial, data = df_norm)
+
+summary(respm1)
+
+```
+Again, we get a convergence warning. So we check the random effects structure again.
+
+```{r}
+summary(rePCA(respm1))
+```
+
+This suggests that we should take out more parameters from the random effects. 
+Please note, that compared to the random effects structure in the response time data, we now have a first component that explains less than 50% of the variance (it was 80% after the first reduction in the rt model)
+
+The random effects here all account for a rather large proportion of variance. The intercept seems to explain little variance here, but it cannot be removed from the random effects structure. Therefore, I will not remove the intercept, but the 3 other variables with the lowest explained variance.
+
+```{r}
+
+respm2 <- glmer('goResp ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + posSet_1 + posSet_2 + posSet_3 + posSet_4 + posSet_5 + posSet_6 + pi_pos01:posSet_1 + pi_pos02:posSet_2 + pi_pos03:posSet_3 + pi_pos04:posSet_4 + pi_pos05:posSet_5 + pi_pos06:posSet_6 + (1 + pi_pos02 + pi_pos03 |subject)', binomial, data = df_norm)
+
+summary(respm2)
+
+```
+
+Still, this does not converge. 
+
+```{r}
+summary(rePCA(respm2))
+```
+
+We will remove one more parameter from the random effects 
+
+```{r}
+
+respm3 <- glmer('goResp ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + posSet_1 + posSet_2 + posSet_3 + posSet_4 + posSet_5 + posSet_6 + pi_pos01:posSet_1 + pi_pos02:posSet_2 + pi_pos03:posSet_3 + pi_pos04:posSet_4 + pi_pos05:posSet_5 + pi_pos06:posSet_6 + (1 + pi_pos03 |subject)', binomial, data = df_norm)
+
+summary(respm3)
+
+```
+
+This model converges. However, we want to know if removing the last random intercept as well improves the model.
+
+```{r}
+
+respm4 <- glmer('goResp ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos04 + pi_pos05 + pi_pos06 + posSet_1 + posSet_2 + posSet_3 + posSet_4 + posSet_5 + posSet_6 + pi_pos01:posSet_1 + pi_pos02:posSet_2 + pi_pos03:posSet_3 + pi_pos04:posSet_4 + pi_pos05:posSet_5 + pi_pos06:posSet_6 + (1 |subject)', binomial, data = df_norm)
+
+summary(respm4)
+```
+
+This suggest that it improves the model to include the additional random effect
+We will continue reducing the fixed effects from model respm3
+
+In this output, we actually get significance values for the test statistics. Those values are hard to interpret for mixed effect models, but they can serve as a proxy to speed up our model reduction.
+
+In the next step, we will exclude all terms that were non-significant at alpha = 0.05
+
+```{r}
+
+respm5 <- glmer('goResp ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos06+ (1 + pi_pos03 | subject)', binomial, data = df_norm)
+
+summary(respm5)
+
+```
+
+Next, we compare this model to the earlier models using AIC.
+
+
+```{r}
+
+list(summary(respm0)$AIC[1], summary(respm1)$AIC[1], summary(respm2)$AIC[1], summary(respm3)$AIC[1], summary(respm4)$AIC[1], summary(respm5)$AIC[1])
+
+```
+
+Again, some of the models that did not converge had lower AICs than the last model. But the last model (respm5) has the lowest AIC among the models that did converge. 
+So that model wins the response model race.
+
+We save that model
+
+```{r}
+# check if the model was already fitted
+filename_bestfitresp <- '../2-3_Fitted/resp_bestfit_lmer.R'
+
+if (file.exists(filename_bestfitresp)){
+  
+  #rtm indicates a ReactionTime Model
+  print('the file already exists. it was not overwritten.')
+  
+}else {
+
+# we save the model
+saveRDS(respm5 , file = filename_bestfitresp)
+  
+}
+
+# and we print the summary a last time
+summary(respm5)
+
+
+```
+
+```{r}
+
+qqnorm(residuals(respm5, type = 'deviance'))
+
+```
+
+
+Finally, we check again if we would have gotten a different result if the data had been normalized.
+
+```{r}
+
+respm5_nn <- glmer('goResp ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos06+ (1 + pi_pos03 | subject)', binomial, data = df)
+
+summary(respm5_nn)
+
+```
+The estimates change - but that's ok and simply indicates that the values have changed during normalization (which is in the end the reason why we normalize data).
+
+The p-values however have not changed, neither did the AIC - that's good.
+
+
+## SUMMARY
+
+For response time and response category each, we fitted the maximal model, including:
+main effects for probability and position at every timepoint
+interaction between probability and position at common time points (i.e. probability1:position1 etc)
+
+random effects for all main effects.
+
+We iteratively reduced the model, first eliminating random effects that explained little to no variance until the model was well specified. (the variance-covariance matrix was not singular and the model converged during training)
+
+Next, we reduced the fixed effects, by removing those fixed effects that explained little to no variance. 
+
+Finally, all models were compared with AIC. We only considered models that were well specified into the selection of the winning model. The model with the lowest AIC was chosen as the winning model.
+
+In the winning model, we checked if model changed when the independent variables were normalized. Neither of the winning models made different predictions for normalized vs non-normalized data.
+
+For reaction times, the winning model was:
+
+rea_time ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + (1 | subject)
+
+For responses, the winning model was:
+
+goResp ~ 1 + pi_pos01 + pi_pos02 + pi_pos03 + pi_pos06 + (1 + pi_pos03 | subject)
+
+
+
+

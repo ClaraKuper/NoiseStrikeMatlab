@@ -16,7 +16,7 @@ expCode = 'NS';
 sprintf('Now running experiment %s',expCode);
 
 % add the functions folder to searchpath and define storage paths
-addpath('Functions/','Data/', 'edf/');
+addpath('0_Functions/','Data/', 'edf/');
 
 % Unify keys in case sb codes with a different system
 KbName('UnifyKeyNames');
@@ -32,11 +32,13 @@ rand('seed', sum(100 * clock));
 tic;
 
 % define some settings for the experiment
-global settings visual design
+global settings visual design;
 
 settings.TEST   = 1; % Track or no Track
 settings.SYNCTEST = 1; % run synchtest or not
 settings.eye_used = str2double(input('\nWhich eye do we track (0 = left, 1 = right):  ','s'));
+settings.id = 0;
+settings.feedback = 1; 
  
 %% start the experiment loop, errors in this loop will be caught
 try
@@ -71,13 +73,13 @@ try
     eye_available = Eyelink('EyeAvailable'); % get eye that's tracked
     
     if ~ settings.eye_used == eye_available
-        disp('The eye set for tracking does not match the tracked eye.')
+        disp('The eye set for tracking does not match the tracked eye.');
         WaitSecs(3);
         ListenChar(1);
         Eyelink('Shutdown');
 
         ShowCursor;
-        Screen('CloseAll')
+        Screen('CloseAll');
         expEnd = toc;
 
         sprintf('This experiment lasted %i minutes', round(expEnd/60,1));
@@ -106,6 +108,7 @@ try
         
         data.block(b_i) = runBlock(b, b_i, el);
         b_i = b_i+1;
+        settings.feedback = 0;
         
     end   
     
@@ -137,7 +140,7 @@ WaitSecs(2);
 try
     fprintf('Receiving data file ''%s''\n', settings.edffilename);
     status=Eyelink('ReceiveFile',settings.edffilename, 'edf/', 1);
-    WaitSecs(2)
+    WaitSecs(2);
     if status > 0
         fprintf('ReceiveFile status %d\n', status);
     end
